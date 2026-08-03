@@ -46,16 +46,15 @@ try {
 }
 
 if (!hasChanges) {
-  console.log('\x1b[33m没有需要提交的改动，跳过 commit/push。\x1b[0m');
-  process.exit(0);
+  console.log('\x1b[33m没有需要提交的改动，跳过 commit，直接尝试推送（若本地已领先远程则推送）。\x1b[0m');
 }
 
 const argMsg = process.argv[2];
 const stamp = new Date().toISOString().replace('T', ' ').slice(0, 19);
 const message = argMsg ? `deploy: ${argMsg}` : `deploy: ${stamp}`;
-git(`commit -m "${message}"`);
+if (hasChanges) git(`commit -m "${message}"`);
 
-// 4. 推送
+// 4. 推送（即使本次没有新 commit，只要本地领先远程也会推上去，避免「commit 成功但 push 失败」后重跑被跳过）
 console.log('\n\x1b[35m[4/4] 推送到 origin/' + BRANCH + '...\x1b[0m');
 git(`push origin ${BRANCH}`);
 
