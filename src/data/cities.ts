@@ -7,16 +7,18 @@ export interface CityPreset {
 }
 
 /**
- * 内置约 150 城：直辖市、省会、计划单列市及主要地级市。
+ * 内置全国地级行政区（约 340 个）：直辖市、地级市、地区、自治州、盟，以及港澳台主要城市。
  * 没有地铁的城市也收录——孩子可以在任何地方修自己的地铁！
+ * 搜索支持：中文名 / 拼音首字母（bj=北京）/ 全拼（beijing），由 CityPicker 用 pinyin-pro 实时计算。
  */
 export const CITIES: CityPreset[] = [
-  // 直辖市
+  // ===== 直辖市 =====
   { key: 'beijing', name: '北京', center: [39.9042, 116.4074], zoom: 11 },
   { key: 'tianjin', name: '天津', center: [39.0842, 117.201], zoom: 11 },
   { key: 'shanghai', name: '上海', center: [31.2304, 121.4737], zoom: 11 },
   { key: 'chongqing', name: '重庆', center: [29.563, 106.5516], zoom: 11 },
-  // 河北
+
+  // ===== 河北 =====
   { key: 'shijiazhuang', name: '石家庄', center: [38.0428, 114.5149], zoom: 12 },
   { key: 'tangshan', name: '唐山', center: [39.6305, 118.1802], zoom: 12 },
   { key: 'baoding', name: '保定', center: [38.874, 115.4646], zoom: 12 },
@@ -25,32 +27,81 @@ export const CITIES: CityPreset[] = [
   { key: 'zhangjiakou', name: '张家口', center: [40.7675, 114.8863], zoom: 12 },
   { key: 'chengde', name: '承德', center: [40.9515, 117.9634], zoom: 12 },
   { key: 'xiongan', name: '雄安新区', center: [38.9356, 115.9345], zoom: 12 },
-  // 山西
+  { key: 'langfang', name: '廊坊', center: [39.5387, 116.6835], zoom: 12 },
+  { key: 'cangzhou', name: '沧州', center: [38.3045, 116.8388], zoom: 12 },
+  { key: 'hengshui', name: '衡水', center: [37.7352, 115.6657], zoom: 12 },
+  { key: 'xingtai', name: '邢台', center: [37.0705, 114.5048], zoom: 12 },
+
+  // ===== 山西 =====
   { key: 'taiyuan', name: '太原', center: [37.8706, 112.5489], zoom: 12 },
   { key: 'datong', name: '大同', center: [40.0768, 113.3001], zoom: 12 },
   { key: 'linfen', name: '临汾', center: [36.088, 111.519], zoom: 12 },
   { key: 'yuncheng', name: '运城', center: [35.0264, 111.0075], zoom: 12 },
-  // 内蒙古
+  { key: 'yangquan', name: '阳泉', center: [37.8575, 113.4773], zoom: 12 },
+  { key: 'changzhi', name: '长治', center: [36.3438, 113.1155], zoom: 12 },
+  { key: 'jinzhong', name: '晋中', center: [37.6842, 112.7366], zoom: 12 },
+  { key: 'jincheng', name: '晋城', center: [35.4898, 112.8512], zoom: 12 },
+  { key: 'shuozhou', name: '朔州', center: [39.3314, 112.4329], zoom: 12 },
+  { key: 'xinzhou', name: '忻州', center: [38.4169, 112.7338], zoom: 12 },
+  { key: 'lvliang', name: '吕梁', center: [37.5039, 111.1443], zoom: 12 },
+
+  // ===== 内蒙古 =====
   { key: 'huhehaote', name: '呼和浩特', center: [40.8426, 111.7492], zoom: 12 },
   { key: 'baotou', name: '包头', center: [40.6574, 109.8404], zoom: 12 },
   { key: 'eerduosi', name: '鄂尔多斯', center: [39.6083, 109.7813], zoom: 12 },
   { key: 'chifeng', name: '赤峰', center: [42.2574, 118.8889], zoom: 12 },
-  // 辽宁
+  { key: 'wuhai', name: '乌海', center: [39.6556, 106.8271], zoom: 12 },
+  { key: 'tongliao', name: '通辽', center: [43.6519, 122.2433], zoom: 12 },
+  { key: 'hulunbeier', name: '呼伦贝尔', center: [49.2115, 119.7572], zoom: 11 },
+  { key: 'bayannaoer', name: '巴彦淖尔', center: [40.7292, 107.4222], zoom: 12 },
+  { key: 'wulanchabu', name: '乌兰察布', center: [41.0298, 113.1308], zoom: 12 },
+  { key: 'xinganmeng', name: '兴安盟', center: [46.0754, 122.0466], zoom: 12 },
+  { key: 'xilingol', name: '锡林郭勒盟', center: [43.9516, 116.0447], zoom: 12 },
+  { key: 'alashanmeng', name: '阿拉善盟', center: [38.8482, 105.6777], zoom: 12 },
+
+  // ===== 辽宁 =====
   { key: 'shenyang', name: '沈阳', center: [41.8057, 123.4315], zoom: 11 },
   { key: 'dalian', name: '大连', center: [38.914, 121.6147], zoom: 11 },
   { key: 'anshan', name: '鞍山', center: [41.108, 122.9943], zoom: 12 },
   { key: 'jinzhou', name: '锦州', center: [41.0955, 121.1272], zoom: 12 },
   { key: 'dandong', name: '丹东', center: [40.0006, 124.3547], zoom: 12 },
-  // 吉林
+  { key: 'fushun', name: '抚顺', center: [41.8805, 123.9392], zoom: 12 },
+  { key: 'benxi', name: '本溪', center: [41.2996, 123.7646], zoom: 12 },
+  { key: 'yingkou', name: '营口', center: [40.6674, 122.2352], zoom: 12 },
+  { key: 'fuxin', name: '阜新', center: [42.0182, 121.6702], zoom: 12 },
+  { key: 'liaoyang', name: '辽阳', center: [41.2718, 123.1707], zoom: 12 },
+  { key: 'panjin', name: '盘锦', center: [41.1193, 122.0705], zoom: 12 },
+  { key: 'tieling', name: '铁岭', center: [42.2932, 123.8386], zoom: 12 },
+  { key: 'chaoyang', name: '朝阳', center: [41.5707, 120.4484], zoom: 12 },
+  { key: 'huludao', name: '葫芦岛', center: [40.7112, 120.8363], zoom: 12 },
+
+  // ===== 吉林 =====
   { key: 'changchun', name: '长春', center: [43.8171, 125.3235], zoom: 11 },
   { key: 'jilin', name: '吉林市', center: [43.8379, 126.5496], zoom: 12 },
   { key: 'yanji', name: '延吉', center: [42.8911, 129.5089], zoom: 12 },
-  // 黑龙江
+  { key: 'siping', name: '四平', center: [43.1668, 124.3538], zoom: 12 },
+  { key: 'liaoyuan', name: '辽源', center: [42.9028, 125.1506], zoom: 12 },
+  { key: 'tonghua', name: '通化', center: [41.7209, 125.9398], zoom: 12 },
+  { key: 'baishan', name: '白山', center: [41.9422, 126.4219], zoom: 12 },
+  { key: 'songyuan', name: '松原', center: [45.1383, 124.8236], zoom: 12 },
+  { key: 'baicheng', name: '白城', center: [45.6206, 122.8368], zoom: 12 },
+
+  // ===== 黑龙江 =====
   { key: 'haerbin', name: '哈尔滨', center: [45.8038, 126.5349], zoom: 11 },
   { key: 'daqing', name: '大庆', center: [46.5876, 125.1039], zoom: 12 },
   { key: 'qiqihaer', name: '齐齐哈尔', center: [47.3543, 123.9182], zoom: 12 },
   { key: 'mudanjiang', name: '牡丹江', center: [44.5517, 129.6331], zoom: 12 },
-  // 江苏
+  { key: 'jixi', name: '鸡西', center: [45.3021, 130.9578], zoom: 12 },
+  { key: 'hegang', name: '鹤岗', center: [47.3328, 130.2796], zoom: 12 },
+  { key: 'shuangyashan', name: '双鸭山', center: [46.6473, 131.142], zoom: 12 },
+  { key: 'yichun-hl', name: '伊春', center: [47.7256, 128.8926], zoom: 12 },
+  { key: 'jiamusi', name: '佳木斯', center: [46.8079, 130.3802], zoom: 12 },
+  { key: 'qitaihe', name: '七台河', center: [45.7676, 131.0188], zoom: 12 },
+  { key: 'heihe', name: '黑河', center: [50.2496, 127.5286], zoom: 12 },
+  { key: 'suihua', name: '绥化', center: [46.6411, 126.976], zoom: 12 },
+  { key: 'daxinganling', name: '大兴安岭', center: [50.4192, 124.1376], zoom: 11 },
+
+  // ===== 江苏 =====
   { key: 'nanjing', name: '南京', center: [32.0603, 118.7969], zoom: 11 },
   { key: 'suzhou', name: '苏州', center: [31.2989, 120.5853], zoom: 11 },
   { key: 'wuxi', name: '无锡', center: [31.4912, 120.3119], zoom: 11 },
@@ -61,37 +112,66 @@ export const CITIES: CityPreset[] = [
   { key: 'zhenjiang', name: '镇江', center: [32.1887, 119.4244], zoom: 12 },
   { key: 'yancheng', name: '盐城', center: [33.3474, 120.1636], zoom: 12 },
   { key: 'lianyungang', name: '连云港', center: [34.5967, 119.2216], zoom: 12 },
-  // 浙江
+  { key: 'taizhou-js', name: '泰州', center: [32.4593, 119.9153], zoom: 12 },
+  { key: 'huaian', name: '淮安', center: [33.6103, 119.0178], zoom: 12 },
+  { key: 'suqian', name: '宿迁', center: [33.9614, 118.2757], zoom: 12 },
+
+  // ===== 浙江 =====
   { key: 'hangzhou', name: '杭州', center: [30.2741, 120.1551], zoom: 11 },
   { key: 'ningbo', name: '宁波', center: [29.8683, 121.544], zoom: 11 },
   { key: 'wenzhou', name: '温州', center: [27.9944, 120.6994], zoom: 12 },
   { key: 'jiaxing', name: '嘉兴', center: [30.7461, 120.7555], zoom: 12 },
   { key: 'shaoxing', name: '绍兴', center: [30.0303, 120.5802], zoom: 12 },
   { key: 'jinhua', name: '金华', center: [29.0792, 119.6474], zoom: 12 },
-  { key: 'taizhou', name: '台州', center: [28.6564, 121.4208], zoom: 12 },
+  { key: 'taizhou-zj', name: '台州', center: [28.6564, 121.4208], zoom: 12 },
   { key: 'huzhou', name: '湖州', center: [30.8933, 120.0868], zoom: 12 },
   { key: 'zhoushan', name: '舟山', center: [29.9855, 122.2078], zoom: 12 },
-  // 安徽
+  { key: 'quzhou', name: '衢州', center: [28.9417, 118.8728], zoom: 12 },
+  { key: 'lishui', name: '丽水', center: [28.4561, 119.9217], zoom: 12 },
+
+  // ===== 安徽 =====
   { key: 'hefei', name: '合肥', center: [31.8206, 117.2272], zoom: 11 },
   { key: 'wuhu', name: '芜湖', center: [31.3529, 118.433], zoom: 12 },
   { key: 'bangbu', name: '蚌埠', center: [32.9163, 117.3897], zoom: 12 },
   { key: 'maanshan', name: '马鞍山', center: [31.6704, 118.5068], zoom: 12 },
   { key: 'anqing', name: '安庆', center: [30.5429, 117.0637], zoom: 12 },
   { key: 'fuyang', name: '阜阳', center: [32.8901, 115.8142], zoom: 12 },
-  // 福建
+  { key: 'huainan', name: '淮南', center: [32.6474, 116.9972], zoom: 12 },
+  { key: 'huaibei', name: '淮北', center: [33.9531, 116.7919], zoom: 12 },
+  { key: 'tongling', name: '铜陵', center: [30.9453, 117.8126], zoom: 12 },
+  { key: 'huangshan', name: '黄山', center: [29.7152, 118.3356], zoom: 12 },
+  { key: 'chuzhou', name: '滁州', center: [32.3016, 118.3146], zoom: 12 },
+  { key: 'suzhou-ah', name: '宿州', center: [33.6338, 116.9647], zoom: 12 },
+  { key: 'liuan', name: '六安', center: [31.7521, 116.5213], zoom: 12 },
+  { key: 'bozhou', name: '亳州', center: [33.8446, 115.7797], zoom: 12 },
+  { key: 'chizhou', name: '池州', center: [30.6572, 117.4891], zoom: 12 },
+  { key: 'xuancheng', name: '宣城', center: [30.9355, 118.7594], zoom: 12 },
+
+  // ===== 福建 =====
   { key: 'fuzhou', name: '福州', center: [26.0745, 119.2965], zoom: 11 },
   { key: 'xiamen', name: '厦门', center: [24.4798, 118.0894], zoom: 11 },
   { key: 'quanzhou', name: '泉州', center: [24.8741, 118.6759], zoom: 12 },
   { key: 'zhangzhou', name: '漳州', center: [24.5135, 117.6471], zoom: 12 },
   { key: 'putian', name: '莆田', center: [25.4541, 119.0076], zoom: 12 },
   { key: 'longyan', name: '龙岩', center: [25.0751, 117.0173], zoom: 12 },
-  // 江西
+  { key: 'sanming', name: '三明', center: [26.2659, 117.6267], zoom: 12 },
+  { key: 'nanping', name: '南平', center: [26.6353, 118.1775], zoom: 12 },
+  { key: 'ningde', name: '宁德', center: [26.665, 119.5503], zoom: 12 },
+
+  // ===== 江西 =====
   { key: 'nanchang', name: '南昌', center: [28.682, 115.8582], zoom: 11 },
   { key: 'jiujiang', name: '九江', center: [29.7051, 115.9996], zoom: 12 },
   { key: 'ganzhou', name: '赣州', center: [25.8311, 114.9348], zoom: 12 },
   { key: 'jingdezhen', name: '景德镇', center: [29.2687, 117.1784], zoom: 12 },
   { key: 'shangrao', name: '上饶', center: [28.4549, 117.9432], zoom: 12 },
-  // 山东
+  { key: 'pingxiang', name: '萍乡', center: [27.619, 113.8528], zoom: 12 },
+  { key: 'xinyu', name: '新余', center: [27.8127, 114.9239], zoom: 12 },
+  { key: 'yingtan', name: '鹰潭', center: [28.2638, 117.0831], zoom: 12 },
+  { key: 'jian', name: '吉安', center: [27.1118, 114.996], zoom: 12 },
+  { key: 'yichun-jx', name: '宜春', center: [27.8043, 114.3914], zoom: 12 },
+  { key: 'fuzhou-jx', name: '抚州', center: [27.9614, 116.3587], zoom: 12 },
+
+  // ===== 山东 =====
   { key: 'jinan', name: '济南', center: [36.6512, 117.1201], zoom: 11 },
   { key: 'qingdao', name: '青岛', center: [36.0671, 120.3826], zoom: 11 },
   { key: 'yantai', name: '烟台', center: [37.4638, 121.4479], zoom: 12 },
@@ -101,7 +181,15 @@ export const CITIES: CityPreset[] = [
   { key: 'linyi', name: '临沂', center: [35.1047, 118.3564], zoom: 12 },
   { key: 'jining', name: '济宁', center: [35.4149, 116.5872], zoom: 12 },
   { key: 'taian', name: '泰安', center: [36.2003, 117.0876], zoom: 12 },
-  // 河南
+  { key: 'zaozhuang', name: '枣庄', center: [34.8127, 117.3233], zoom: 12 },
+  { key: 'dongying', name: '东营', center: [37.4344, 118.6754], zoom: 12 },
+  { key: 'rizhao', name: '日照', center: [35.4164, 119.4612], zoom: 12 },
+  { key: 'dezhou', name: '德州', center: [37.4346, 116.359], zoom: 12 },
+  { key: 'liaocheng', name: '聊城', center: [36.4569, 115.9801], zoom: 12 },
+  { key: 'binzhou', name: '滨州', center: [37.3831, 117.9723], zoom: 12 },
+  { key: 'heze', name: '菏泽', center: [35.2338, 115.4809], zoom: 12 },
+
+  // ===== 河南 =====
   { key: 'zhengzhou', name: '郑州', center: [34.7466, 113.6254], zoom: 11 },
   { key: 'luoyang', name: '洛阳', center: [34.6181, 112.454], zoom: 12 },
   { key: 'kaifeng', name: '开封', center: [34.7972, 114.3077], zoom: 12 },
@@ -110,21 +198,52 @@ export const CITIES: CityPreset[] = [
   { key: 'anyang', name: '安阳', center: [36.0976, 114.3924], zoom: 12 },
   { key: 'xuchang', name: '许昌', center: [34.0355, 113.8523], zoom: 12 },
   { key: 'shangqiu', name: '商丘', center: [34.4442, 115.6564], zoom: 12 },
-  // 湖北
+  { key: 'pingdingshan', name: '平顶山', center: [33.7398, 113.3059], zoom: 12 },
+  { key: 'jiaozuo', name: '焦作', center: [35.2398, 113.2413], zoom: 12 },
+  { key: 'hebi', name: '鹤壁', center: [35.7484, 114.295], zoom: 12 },
+  { key: 'puyang', name: '濮阳', center: [35.7647, 115.0243], zoom: 12 },
+  { key: 'luohe', name: '漯河', center: [33.5817, 114.0308], zoom: 12 },
+  { key: 'sanmenxia', name: '三门峡', center: [34.7784, 111.1948], zoom: 12 },
+  { key: 'xinyang', name: '信阳', center: [32.1274, 114.0753], zoom: 12 },
+  { key: 'zhoukou', name: '周口', center: [33.6352, 114.6639], zoom: 12 },
+  { key: 'zhumadian', name: '驻马店', center: [33.0119, 114.0247], zoom: 12 },
+  { key: 'jiyuan', name: '济源', center: [35.0677, 112.6019], zoom: 12 },
+
+  // ===== 湖北 =====
   { key: 'wuhan', name: '武汉', center: [30.5928, 114.3055], zoom: 11 },
   { key: 'yichang', name: '宜昌', center: [30.6919, 111.2865], zoom: 12 },
   { key: 'xiangyang', name: '襄阳', center: [32.009, 112.1226], zoom: 12 },
   { key: 'jingzhou', name: '荆州', center: [30.3355, 112.2397], zoom: 12 },
   { key: 'huangshi', name: '黄石', center: [30.1996, 115.0387], zoom: 12 },
   { key: 'shiyan', name: '十堰', center: [32.6294, 110.798], zoom: 12 },
-  // 湖南
+  { key: 'jingmen', name: '荆门', center: [31.0351, 112.2042], zoom: 12 },
+  { key: 'xiaogan', name: '孝感', center: [30.9243, 113.9222], zoom: 12 },
+  { key: 'huanggang', name: '黄冈', center: [30.4519, 114.8791], zoom: 12 },
+  { key: 'xianning', name: '咸宁', center: [29.8625, 114.3044], zoom: 12 },
+  { key: 'suizhou', name: '随州', center: [31.6908, 113.3719], zoom: 12 },
+  { key: 'enshi', name: '恩施', center: [30.2674, 109.4862], zoom: 12 },
+  { key: 'ezhou', name: '鄂州', center: [30.3964, 114.8906], zoom: 12 },
+  { key: 'tianmen', name: '天门', center: [30.6597, 113.1628], zoom: 12 },
+  { key: 'xiantao', name: '仙桃', center: [30.364, 113.4535], zoom: 12 },
+  { key: 'qianjiang', name: '潜江', center: [30.409, 112.8997], zoom: 12 },
+
+  // ===== 湖南 =====
   { key: 'changsha', name: '长沙', center: [28.2282, 112.9388], zoom: 11 },
   { key: 'zhuzhou', name: '株洲', center: [27.8274, 113.134], zoom: 12 },
   { key: 'xiangtan', name: '湘潭', center: [27.8297, 112.944], zoom: 12 },
   { key: 'hengyang', name: '衡阳', center: [26.8932, 112.572], zoom: 12 },
   { key: 'yueyang', name: '岳阳', center: [29.3573, 113.1287], zoom: 12 },
   { key: 'changde', name: '常德', center: [29.0317, 111.6985], zoom: 12 },
-  // 广东
+  { key: 'shaoyang', name: '邵阳', center: [27.2386, 111.4692], zoom: 12 },
+  { key: 'zhangjiajie', name: '张家界', center: [29.1172, 110.4793], zoom: 12 },
+  { key: 'yiyang', name: '益阳', center: [28.5541, 112.3551], zoom: 12 },
+  { key: 'chenzhou', name: '郴州', center: [25.7696, 113.0172], zoom: 12 },
+  { key: 'yongzhou', name: '永州', center: [26.4207, 111.6131], zoom: 12 },
+  { key: 'huaihua', name: '怀化', center: [27.5506, 110.0009], zoom: 12 },
+  { key: 'loudi', name: '娄底', center: [27.7069, 112.0088], zoom: 12 },
+  { key: 'xiangxi', name: '湘西', center: [28.3133, 109.7384], zoom: 12 },
+
+  // ===== 广东 =====
   { key: 'guangzhou', name: '广州', center: [23.1291, 113.2644], zoom: 11 },
   { key: 'shenzhen', name: '深圳', center: [22.5431, 114.0579], zoom: 11 },
   { key: 'zhuhai', name: '珠海', center: [22.2707, 113.5767], zoom: 12 },
@@ -140,17 +259,36 @@ export const CITIES: CityPreset[] = [
   { key: 'shaoguan', name: '韶关', center: [24.8109, 113.5975], zoom: 12 },
   { key: 'meizhou', name: '梅州', center: [24.2886, 116.1226], zoom: 12 },
   { key: 'maoming', name: '茂名', center: [21.6633, 110.9255], zoom: 12 },
-  // 广西
+  { key: 'shanwei', name: '汕尾', center: [22.7862, 115.3642], zoom: 12 },
+  { key: 'heyuan', name: '河源', center: [23.7434, 114.7009], zoom: 12 },
+  { key: 'yangjiang', name: '阳江', center: [21.8583, 111.982], zoom: 12 },
+  { key: 'chaozhou', name: '潮州', center: [23.6598, 116.6228], zoom: 12 },
+  { key: 'jieyang', name: '揭阳', center: [23.5497, 116.379], zoom: 12 },
+  { key: 'yunfu', name: '云浮', center: [22.9149, 112.0444], zoom: 12 },
+
+  // ===== 广西 =====
   { key: 'nanning', name: '南宁', center: [22.817, 108.3665], zoom: 11 },
   { key: 'liuzhou', name: '柳州', center: [24.3264, 109.4281], zoom: 12 },
   { key: 'guilin', name: '桂林', center: [25.2345, 110.1799], zoom: 12 },
   { key: 'wuzhou', name: '梧州', center: [23.4769, 111.2792], zoom: 12 },
   { key: 'beihai', name: '北海', center: [21.4811, 109.1201], zoom: 12 },
-  { key: 'yulin', name: '玉林', center: [22.6546, 110.1809], zoom: 12 },
-  // 海南
+  { key: 'yulin-gx', name: '玉林', center: [22.6546, 110.1809], zoom: 12 },
+  { key: 'fangchenggang', name: '防城港', center: [21.6146, 108.3456], zoom: 12 },
+  { key: 'qinzhou', name: '钦州', center: [21.9785, 108.6539], zoom: 12 },
+  { key: 'guigang', name: '贵港', center: [23.0939, 109.5978], zoom: 12 },
+  { key: 'baise', name: '百色', center: [23.9006, 106.6166], zoom: 12 },
+  { key: 'hezhou', name: '贺州', center: [24.4141, 111.5528], zoom: 12 },
+  { key: 'hechi', name: '河池', center: [24.6975, 108.057], zoom: 12 },
+  { key: 'laibin', name: '来宾', center: [23.7339, 109.2367], zoom: 12 },
+  { key: 'chongzuo', name: '崇左', center: [22.3717, 107.9588], zoom: 12 },
+
+  // ===== 海南 =====
   { key: 'haikou', name: '海口', center: [20.0444, 110.1987], zoom: 12 },
   { key: 'sanya', name: '三亚', center: [18.2535, 109.5117], zoom: 12 },
-  // 四川
+  { key: 'sansha', name: '三沙', center: [16.8333, 112.3333], zoom: 11 },
+  { key: 'danzhou', name: '儋州', center: [19.5216, 109.5818], zoom: 12 },
+
+  // ===== 四川 =====
   { key: 'chengdu', name: '成都', center: [30.5728, 104.0668], zoom: 11 },
   { key: 'mianyang', name: '绵阳', center: [31.4675, 104.6796], zoom: 12 },
   { key: 'deyang', name: '德阳', center: [31.127, 104.398], zoom: 12 },
@@ -159,42 +297,132 @@ export const CITIES: CityPreset[] = [
   { key: 'leshan', name: '乐山', center: [29.5521, 103.7654], zoom: 12 },
   { key: 'luzhou', name: '泸州', center: [28.8718, 105.4423], zoom: 12 },
   { key: 'dazhou', name: '达州', center: [31.2096, 107.4681], zoom: 12 },
-  // 贵州
+  { key: 'zigong', name: '自贡', center: [29.3392, 104.7774], zoom: 12 },
+  { key: 'panzhihua', name: '攀枝花', center: [26.5823, 101.7186], zoom: 12 },
+  { key: 'guangyuan', name: '广元', center: [32.4368, 106.0198], zoom: 12 },
+  { key: 'suining', name: '遂宁', center: [30.5373, 105.5834], zoom: 12 },
+  { key: 'neijiang', name: '内江', center: [29.5791, 105.0615], zoom: 12 },
+  { key: 'meishan', name: '眉山', center: [30.0484, 103.8311], zoom: 12 },
+  { key: 'guangan', name: '广安', center: [30.4623, 106.6336], zoom: 12 },
+  { key: 'yaan', name: '雅安', center: [29.9839, 103.0189], zoom: 12 },
+  { key: 'bazhong', name: '巴中', center: [31.8629, 106.7498], zoom: 12 },
+  { key: 'ziyang', name: '资阳', center: [30.1285, 104.6362], zoom: 12 },
+  { key: 'abazhou', name: '阿坝州', center: [31.8997, 102.2214], zoom: 11 },
+  { key: 'ganzizhou', name: '甘孜州', center: [30.0505, 101.9589], zoom: 11 },
+  { key: 'liangshan', name: '凉山州', center: [27.8969, 102.2645], zoom: 11 },
+
+  // ===== 贵州 =====
   { key: 'guiyang', name: '贵阳', center: [26.647, 106.6302], zoom: 11 },
   { key: 'zunyi', name: '遵义', center: [27.7254, 106.9274], zoom: 12 },
   { key: 'anshun', name: '安顺', center: [26.2532, 105.9476], zoom: 12 },
-  // 云南
+  { key: 'liupanshui', name: '六盘水', center: [26.5954, 104.8322], zoom: 12 },
+  { key: 'tongren', name: '铜仁', center: [27.7196, 109.1924], zoom: 12 },
+  { key: 'qianxinan', name: '黔西南州', center: [25.0881, 104.8992], zoom: 12 },
+  { key: 'bijie', name: '毕节', center: [27.3036, 105.2955], zoom: 12 },
+  { key: 'qiandongnan', name: '黔东南州', center: [26.5833, 107.9867], zoom: 12 },
+  { key: 'qiannan', name: '黔南州', center: [26.2416, 107.5172], zoom: 12 },
+
+  // ===== 云南 =====
   { key: 'kunming', name: '昆明', center: [24.8801, 102.8329], zoom: 11 },
   { key: 'dali', name: '大理', center: [25.6065, 100.2676], zoom: 12 },
   { key: 'qujing', name: '曲靖', center: [25.4907, 103.7962], zoom: 12 },
   { key: 'lijiang', name: '丽江', center: [26.8765, 100.2271], zoom: 12 },
   { key: 'xishuangbanna', name: '西双版纳', center: [22.0074, 100.7979], zoom: 12 },
-  // 西藏
+  { key: 'yuxi', name: '玉溪', center: [24.3497, 102.5431], zoom: 12 },
+  { key: 'baoshan', name: '保山', center: [25.1118, 99.1671], zoom: 12 },
+  { key: 'zhaotong', name: '昭通', center: [27.3381, 103.7172], zoom: 12 },
+  { key: 'chuxiong', name: '楚雄', center: [25.0414, 101.5466], zoom: 12 },
+  { key: 'honghe', name: '红河州', center: [23.3782, 103.3766], zoom: 12 },
+  { key: 'wenshan', name: '文山州', center: [23.3692, 104.2447], zoom: 12 },
+  { key: 'puer', name: '普洱', center: [22.7773, 100.9669], zoom: 12 },
+  { key: 'dehong', name: '德宏州', center: [24.4366, 98.5882], zoom: 12 },
+  { key: 'nujiang', name: '怒江州', center: [25.8507, 98.8536], zoom: 12 },
+  { key: 'diqing', name: '迪庆州', center: [27.8297, 99.0897], zoom: 12 },
+  { key: 'linchang', name: '临沧', center: [23.8771, 100.0866], zoom: 12 },
+
+  // ===== 西藏 =====
   { key: 'lasa', name: '拉萨', center: [29.6525, 91.1406], zoom: 12 },
-  // 陕西
+  { key: 'rikaze', name: '日喀则', center: [29.2669, 88.8833], zoom: 12 },
+  { key: 'changdu', name: '昌都', center: [31.1342, 97.1747], zoom: 12 },
+  { key: 'linzhi', name: '林芝', center: [29.6548, 94.3617], zoom: 12 },
+  { key: 'shannan', name: '山南', center: [29.2375, 91.7664], zoom: 12 },
+  { key: 'nagqu', name: '那曲', center: [31.4846, 92.0529], zoom: 12 },
+  { key: 'ali', name: '阿里地区', center: [32.5014, 80.1054], zoom: 11 },
+
+  // ===== 陕西 =====
   { key: 'xian', name: '西安', center: [34.3416, 108.9398], zoom: 11 },
   { key: 'xianyang', name: '咸阳', center: [34.3296, 108.7093], zoom: 12 },
   { key: 'baoji', name: '宝鸡', center: [34.3619, 107.2373], zoom: 12 },
   { key: 'weinan', name: '渭南', center: [34.4997, 109.5098], zoom: 12 },
   { key: 'yulin-shaanxi', name: '榆林', center: [38.2853, 109.7346], zoom: 12 },
   { key: 'hanzhong', name: '汉中', center: [33.0677, 107.0233], zoom: 12 },
-  // 甘肃
+  { key: 'tongchuan', name: '铜川', center: [35.0911, 108.9522], zoom: 12 },
+  { key: 'ankang', name: '安康', center: [32.6804, 109.024], zoom: 12 },
+  { key: 'shangluo', name: '商洛', center: [33.8688, 109.9392], zoom: 12 },
+  { key: 'yanan', name: '延安', center: [36.5966, 109.4906], zoom: 12 },
+
+  // ===== 甘肃 =====
   { key: 'lanzhou', name: '兰州', center: [36.0611, 103.8343], zoom: 11 },
   { key: 'tianshui', name: '天水', center: [34.5809, 105.7249], zoom: 12 },
   { key: 'jiuquan', name: '酒泉', center: [39.7325, 98.4944], zoom: 12 },
   { key: 'zhangye', name: '张掖', center: [38.9259, 100.4498], zoom: 12 },
-  // 青海 / 宁夏 / 新疆
+  { key: 'jiayuguan', name: '嘉峪关', center: [39.7731, 98.2906], zoom: 12 },
+  { key: 'wuwei', name: '武威', center: [37.9297, 102.6347], zoom: 12 },
+  { key: 'qingyang', name: '庆阳', center: [35.7132, 107.6386], zoom: 12 },
+  { key: 'pingliang', name: '平凉', center: [35.5428, 106.6683], zoom: 12 },
+  { key: 'baiyin', name: '白银', center: [36.5451, 104.1739], zoom: 12 },
+  { key: 'dingxi', name: '定西', center: [35.5803, 104.5859], zoom: 12 },
+  { key: 'longnan', name: '陇南', center: [33.4019, 104.9293], zoom: 12 },
+  { key: 'linxia', name: '临夏州', center: [35.6017, 103.1579], zoom: 12 },
+  { key: 'gannan', name: '甘南州', center: [34.9847, 102.9095], zoom: 12 },
+
+  // ===== 青海 =====
   { key: 'xining', name: '西宁', center: [36.6171, 101.7782], zoom: 12 },
+  { key: 'haidong', name: '海东', center: [36.4789, 102.0997], zoom: 12 },
+  { key: 'haixi', name: '海西州', center: [37.3735, 97.3783], zoom: 12 },
+  { key: 'haibei', name: '海北州', center: [36.9604, 100.9015], zoom: 12 },
+  { key: 'huangnan', name: '黄南州', center: [35.5141, 102.0196], zoom: 12 },
+  { key: 'hainan', name: '海南州', center: [36.2813, 100.6195], zoom: 12 },
+  { key: 'guoluo', name: '果洛州', center: [34.4732, 100.2437], zoom: 12 },
+  { key: 'yushu', name: '玉树州', center: [33.0055, 97.0137], zoom: 12 },
+
+  // ===== 宁夏 =====
   { key: 'yinchuan', name: '银川', center: [38.4872, 106.2309], zoom: 12 },
+  { key: 'shizuishan', name: '石嘴山', center: [38.9817, 106.3768], zoom: 12 },
+  { key: 'wuzhong', name: '吴忠', center: [37.9947, 106.1992], zoom: 12 },
+  { key: 'guyuan', name: '固原', center: [36.0045, 106.2536], zoom: 12 },
+  { key: 'zhongwei', name: '中卫', center: [37.5049, 105.1781], zoom: 12 },
+
+  // ===== 新疆 =====
   { key: 'wulumuqi', name: '乌鲁木齐', center: [43.8256, 87.6168], zoom: 11 },
   { key: 'kashi', name: '喀什', center: [39.4677, 75.9938], zoom: 12 },
   { key: 'yining', name: '伊宁', center: [43.9172, 81.3241], zoom: 12 },
   { key: 'kelamayi', name: '克拉玛依', center: [45.5799, 84.8892], zoom: 12 },
-  // 港澳台
+  { key: 'tulufan', name: '吐鲁番', center: [42.9467, 89.1829], zoom: 12 },
+  { key: 'hami', name: '哈密', center: [42.8197, 93.5155], zoom: 12 },
+  { key: 'changji', name: '昌吉', center: [44.0126, 87.3051], zoom: 12 },
+  { key: 'boertala', name: '博尔塔拉州', center: [44.9105, 82.0664], zoom: 12 },
+  { key: 'bayinguoleng', name: '巴音郭楞州', center: [41.6807, 86.1509], zoom: 12 },
+  { key: 'akesu', name: '阿克苏', center: [41.1682, 80.2606], zoom: 12 },
+  { key: 'kezile', name: '克孜勒苏州', center: [39.7132, 76.0731], zoom: 12 },
+  { key: 'hetian', name: '和田', center: [37.1106, 79.922], zoom: 12 },
+  { key: 'tacheng', name: '塔城', center: [46.7487, 82.9618], zoom: 12 },
+  { key: 'altay', name: '阿勒泰', center: [47.8474, 88.1398], zoom: 12 },
+  { key: 'shihezi', name: '石河子', center: [44.3062, 86.0926], zoom: 12 },
+  { key: 'alara', name: '阿拉尔', center: [40.5442, 81.2726], zoom: 12 },
+  { key: 'tumushuke', name: '图木舒克', center: [39.8557, 79.0684], zoom: 12 },
+  { key: 'wujiaqu', name: '五家渠', center: [44.1667, 87.5333], zoom: 12 },
+
+  // ===== 港澳台 =====
   { key: 'xianggang', name: '中国香港', center: [22.3193, 114.1694], zoom: 11 },
   { key: 'aomen', name: '中国澳门', center: [22.1987, 113.5439], zoom: 12 },
   { key: 'taibei', name: '中国台湾·台北', center: [25.033, 121.5654], zoom: 11 },
   { key: 'gaoxiong', name: '中国台湾·高雄', center: [22.6273, 120.3014], zoom: 12 },
+  { key: 'taizhong', name: '中国台湾·台中', center: [24.1446, 120.6793], zoom: 12 },
+  { key: 'tainan', name: '中国台湾·台南', center: [22.9999, 120.2269], zoom: 12 },
+  { key: 'jilong', name: '中国台湾·基隆', center: [25.1282, 121.7417], zoom: 12 },
+  { key: 'xinzhu', name: '中国台湾·新竹', center: [24.8138, 120.9675], zoom: 12 },
+  { key: 'jiayi', name: '中国台湾·嘉义', center: [23.4798, 120.4499], zoom: 12 },
 ]
 
 export function cityByKey(key: string | undefined): CityPreset | undefined {

@@ -13,6 +13,25 @@ import { newId } from '../utils/id'
 
 const UNDO_LIMIT = 50
 
+/**
+ * 删除站点后，把按区间序号存储的 Record（segmentSpeeds / segmentGround）整体平移重排，
+ * 保持 key 与新的 stationIds[i]→stationIds[i+1] 对齐。k 为被删站点在 stationIds 中的下标。
+ */
+function reindexSegRecord<T>(
+  rec: Record<number, T> | undefined,
+  k: number,
+): Record<number, T> | undefined {
+  if (!rec) return rec
+  const next: Record<number, T> = {}
+  for (const [key, val] of Object.entries(rec)) {
+    const i = Number(key)
+    if (i < k - 1) next[i] = val // 被删区域之前的区间：序号不变
+    else if (i > k) next[i - 1] = val // 之后的区间：整体前移一位
+    // i === k-1 或 i === k 为与删除站相邻、被合并的区间：丢弃
+  }
+  return next
+}
+
 interface WorkStore {
   work: Work | null
   past: Work[]
@@ -33,10 +52,15 @@ interface WorkStore {
   toggleLineVisible(lineId: string): void
   deleteLine(lineId: string): void
   setTrain(lineId: string, patch: Partial<Line['train']>): void
-  /** 通用线路属性更新（线样式/路径模式/线路时速/区间时速等） */
+  /** 通用线路属性更新（线样式/路径模式/线路时速/区间时速/地上地下等） */
   updateLine(
     lineId: string,
-    patch: Partial<Pick<Line, 'style' | 'pathMode' | 'speedKmh' | 'segmentSpeeds'>>,
+    patch: Partial<
+      Pick<
+        Line,
+        'style' | 'pathMode' | 'speedKmh' | 'segmentSpeeds' | 'defaultGround' | 'segmentGround'
+      >
+    >,
   ): void
 
   // ---- 站点 ----
@@ -219,26 +243,36 @@ export const useWorkStore = create<WorkStore>((set, get) => ({
   },
 
   removeStationFromLine(lineId, stationId) {
-    get().mutate((w) =>
-      cleanupOrphanStations({
-        ...w,
-        lines: w.lines.map((l) =>
-          l.id === lineId ? { ...l, stationIds: l.stationIds.filter((id) => id !== stationId) } : l,
-        ),
-      }),
-    )
+    get().mutate((w) => {
+      const lines = w.lines.map((l) => {
+        if (l.id !== lineId) return l
+        const idx = l.stationIds.indexOf(stationId)
+        if (idx < 0) return l
+        return {
+          ...l,
+          stationIds: l.stationIds.filter((id) => id !== stationId),
+          segmentSpeeds: reindexSegRecord(l.segmentSpeeds, idx),
+          segmentGround: reindexSegRecord(l.segmentGround, idx),
+        }
+      })
+      return cleanupOrphanStations({ ...w, lines })
+    })
   },
 
   deleteStation(stationId) {
-    get().mutate((w) =>
-      cleanupOrphanStations({
-        ...w,
-        lines: w.lines.map((l) => ({
+    get().mutate((w) => {
+      const lines = w.lines.map((l) => {
+        const idx = l.stationIds.indexOf(stationId)
+        if (idx < 0) return l
+        return {
           ...l,
           stationIds: l.stationIds.filter((id) => id !== stationId),
-        })),
-      }),
-    )
+          segmentSpeeds: reindexSegRecord(l.segmentSpeeds, idx),
+          segmentGround: reindexSegRecord(l.segmentGround, idx),
+        }
+      })
+      return cleanupOrphanStations({ ...w, lines })
+    })
   },
 
   // ---- 贴纸 ----

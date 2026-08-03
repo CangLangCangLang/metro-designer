@@ -1,53 +1,56 @@
 import { Fragment } from 'react'
 import { Polyline } from 'react-leaflet'
 import type { Work } from '../model/types'
-import { smoothSample } from '../utils/smooth'
+import { lineSegments } from '../utils/lineSegments'
 
-/** 线路层：每条线渲染双层 polyline（白描边 casing + 彩色线芯），经典地铁图样式 */
+/**
+ * 线路层：每条线按「站间区间」分别渲染（白描边 casing + 彩色线芯）。
+ * 地下段用虚线 + 暗灰描边 + 降低不透明度，与地上段明显区分。
+ */
 export function LineLayer({ work }: { work: Work }) {
   return (
     <>
       {work.lines
         .filter((l) => l.visible && l.stationIds.length >= 2)
         .map((line) => {
-          const raw = line.stationIds
-            .map((id) => work.stations[id])
-            .filter((s): s is NonNullable<typeof s> => Boolean(s))
-          if (raw.length < 2) return null
-          // 曲线模式：Catmull-Rom 密点采样；直线模式：站间直连
-          const pts =
-            (line.pathMode ?? 'straight') === 'smooth'
-              ? smoothSample(raw.map((s) => ({ x: s.lat, y: s.lng }))).map(
-                  (p) => [p.x, p.y] as [number, number],
-                )
-              : raw.map((s) => [s.lat, s.lng] as [number, number])
-          const dashed = (line.style ?? 'solid') === 'dashed'
+          const parts = lineSegments(line, work.stations)
+          if (parts.length === 0) return null
+          const lineDashed = (line.style ?? 'solid') === 'dashed'
           return (
             <Fragment key={line.id}>
-              <Polyline
-                positions={pts}
-                pathOptions={{
-                  color: '#ffffff',
-                  weight: 9,
-                  opacity: 0.9,
-                  lineCap: 'round',
-                  lineJoin: 'round',
-                  ...(dashed ? { dashArray: '13 11' } : {}),
-                }}
-                interactive={false}
-              />
-              <Polyline
-                positions={pts}
-                pathOptions={{
-                  color: line.color,
-                  weight: 5,
-                  opacity: 1,
-                  lineCap: 'round',
-                  lineJoin: 'round',
-                  ...(dashed ? { dashArray: '13 11' } : {}),
-                }}
-                interactive={false}
-              />
+              {parts.map((part) => {
+                const under = part.ground === 'under'
+                const dashed = under || lineDashed
+                const dashArr = dashed ? '13 11' : undefined
+                return (
+                  <Fragment key={`${line.id}-${part.segIdx}`}>
+                    <Polyline
+                      positions={part.pts}
+                      pathOptions={{
+                        color: under ? '#4b5563' : '#ffffff',
+                        weight: under ? 8 : 9,
+                        opacity: under ? 0.65 : 0.9,
+                        lineCap: 'round',
+                        lineJoin: 'round',
+                        ...(dashArr ? { dashArray: dashArr } : {}),
+                      }}
+                      interactive={false}
+                    />
+                    <Polyline
+                      positions={part.pts}
+                      pathOptions={{
+                        color: line.color,
+                        weight: under ? 4 : 5,
+                        opacity: under ? 0.8 : 1,
+                        lineCap: 'round',
+                        lineJoin: 'round',
+                        ...(dashArr ? { dashArray: dashArr } : {}),
+                      }}
+                      interactive={false}
+                    />
+                  </Fragment>
+                )
+              })}
             </Fragment>
           )
         })}

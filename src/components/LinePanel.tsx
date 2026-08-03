@@ -23,6 +23,7 @@ function StationList({ line, work }: { line: Line; work: Work }) {
 
   const lens = segmentLengthsMeters(line, work.stations)
   const minutes = tripMinutes(line, work.stations)
+  const groundDefault = line.defaultGround ?? 'ground'
 
   const cycleSegSpeed = (segIdx: number) => {
     const current = line.segmentSpeeds?.[segIdx] ?? 0 // 0 = 自动
@@ -34,6 +35,15 @@ function StationList({ line, work }: { line: Line; work: Work }) {
     updateLine(line.id, { segmentSpeeds: segSpeeds })
   }
 
+  const cycleSegGround = (segIdx: number) => {
+    const current = line.segmentGround?.[segIdx] ?? groundDefault
+    const next = current === 'ground' ? 'under' : 'ground'
+    const segGround = { ...(line.segmentGround ?? {}) }
+    if (next === groundDefault) delete segGround[segIdx]
+    else segGround[segIdx] = next
+    updateLine(line.id, { segmentGround: segGround })
+  }
+
   return (
     <div className="station-list">
       {stops.map((st, i) => (
@@ -41,13 +51,24 @@ function StationList({ line, work }: { line: Line; work: Work }) {
           {i > 0 && (
             <div className="station-list-gap">
               <span>↓ {formatDistance(lens[i - 1] ?? 0)}</span>
-              <button
-                className={`seg-speed-btn ${line.segmentSpeeds?.[i - 1] ? 'seg-speed-custom' : ''}`}
-                title="点我切换这一段的速度"
-                onClick={() => cycleSegSpeed(i - 1)}
-              >
-                ⚡{line.segmentSpeeds?.[i - 1] ?? line.speedKmh ?? 80}
-              </button>
+              <div className="gap-btns">
+                <button
+                  className={`seg-speed-btn ${line.segmentSpeeds?.[i - 1] ? 'seg-speed-custom' : ''}`}
+                  title="点我切换这一段的速度"
+                  onClick={() => cycleSegSpeed(i - 1)}
+                >
+                  ⚡{line.segmentSpeeds?.[i - 1] ?? line.speedKmh ?? 80}
+                </button>
+                <button
+                  className={`seg-ground-btn ${
+                    (line.segmentGround?.[i - 1] ?? groundDefault) === 'under' ? 'seg-under' : ''
+                  }`}
+                  title="点我切换这一段在地上 / 地下"
+                  onClick={() => cycleSegGround(i - 1)}
+                >
+                  {(line.segmentGround?.[i - 1] ?? groundDefault) === 'under' ? '🌑地下' : '🌞地上'}
+                </button>
+              </div>
             </div>
           )}
           <div className="station-list-item">
@@ -136,6 +157,7 @@ export function LinePanel() {
         const km = lineLengthMeters(line, work.stations)
         const style = line.style ?? 'solid'
         const pathMode = line.pathMode ?? 'straight'
+        const groundDefault = line.defaultGround ?? 'ground'
         return (
           <div
             key={line.id}
@@ -230,47 +252,75 @@ export function LinePanel() {
               </button>
             </div>
 
-            <div className="line-card-row line-style-row" onClick={(e) => e.stopPropagation()}>
-              <button
-                className={`style-btn ${style === 'solid' ? 'style-on' : ''}`}
-                title="实线（已开通）"
-                onClick={() => updateLine(line.id, { style: 'solid' })}
-              >
-                ━ 实线
-              </button>
-              <button
-                className={`style-btn ${style === 'dashed' ? 'style-on' : ''}`}
-                title="虚线（规划中）"
-                onClick={() => updateLine(line.id, { style: 'dashed' })}
-              >
-                ┅ 虚线
-              </button>
-              <button
-                className={`style-btn ${pathMode === 'straight' ? 'style-on' : ''}`}
-                title="直线"
-                onClick={() => updateLine(line.id, { pathMode: 'straight' })}
-              >
-                📐 直线
-              </button>
-              <button
-                className={`style-btn ${pathMode === 'smooth' ? 'style-on' : ''}`}
-                title="曲线"
-                onClick={() => updateLine(line.id, { pathMode: 'smooth' })}
-              >
-                〰️ 曲线
-              </button>
-              <button
-                className="style-btn style-btn-speed"
-                title="线路时速：点我切换（60/80/100/120 km/h）"
-                onClick={() => {
-                  const cur = line.speedKmh ?? 80
-                  const idx = LINE_SPEED_OPTIONS.indexOf(cur)
-                  const next = LINE_SPEED_OPTIONS[(idx + 1) % LINE_SPEED_OPTIONS.length]
-                  updateLine(line.id, { speedKmh: next })
-                }}
-              >
-                ⚡{line.speedKmh ?? 80}
-              </button>
+            <div
+              className="line-card-section"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="section-label">线型</div>
+              <div className="seg-group">
+                <button
+                  className={`pill-btn ${style === 'solid' ? 'pill-on' : ''}`}
+                  onClick={() => updateLine(line.id, { style: 'solid' })}
+                >
+                  ━ 实线
+                </button>
+                <button
+                  className={`pill-btn ${style === 'dashed' ? 'pill-on' : ''}`}
+                  onClick={() => updateLine(line.id, { style: 'dashed' })}
+                >
+                  ┅ 虚线
+                </button>
+              </div>
+
+              <div className="section-label">走线</div>
+              <div className="seg-group">
+                <button
+                  className={`pill-btn ${pathMode === 'straight' ? 'pill-on' : ''}`}
+                  onClick={() => updateLine(line.id, { pathMode: 'straight' })}
+                >
+                  📐 直线
+                </button>
+                <button
+                  className={`pill-btn ${pathMode === 'smooth' ? 'pill-on' : ''}`}
+                  onClick={() => updateLine(line.id, { pathMode: 'smooth' })}
+                >
+                  〰️ 曲线
+                </button>
+              </div>
+
+              <div className="section-label">
+                时速 <span className="section-hint">km/h</span>
+              </div>
+              <div className="seg-group speed-group">
+                {LINE_SPEED_OPTIONS.map((opt) => (
+                  <button
+                    key={opt}
+                    className={`pill-btn pill-speed ${line.speedKmh === opt ? 'pill-on' : ''}`}
+                    onClick={() => updateLine(line.id, { speedKmh: opt })}
+                  >
+                    {opt}
+                  </button>
+                ))}
+              </div>
+
+              <div className="section-label">默认地面</div>
+              <div className="seg-group">
+                <button
+                  className={`pill-btn ${groundDefault === 'ground' ? 'pill-on' : ''}`}
+                  onClick={() => updateLine(line.id, { defaultGround: 'ground' })}
+                >
+                  🌞 地上
+                </button>
+                <button
+                  className={`pill-btn ${groundDefault === 'under' ? 'pill-on' : ''}`}
+                  onClick={() => updateLine(line.id, { defaultGround: 'under' })}
+                >
+                  🌑 地下
+                </button>
+              </div>
+              <div className="section-note">
+                展开下方站点，可单独设置「某一段」地上 / 地下
+              </div>
             </div>
 
             {detailFor === line.id && <StationList line={line} work={work} />}

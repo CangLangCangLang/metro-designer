@@ -20,9 +20,9 @@ interface TrainRuntime {
 function trainIcon(color: string) {
   return L.divIcon({
     className: 'train-marker',
-    html: `<div class="train-token" style="--c:${color}"><div class="train-arrow"></div><span class="train-emoji">🚇</span></div>`,
-    iconSize: [30, 30],
-    iconAnchor: [15, 15],
+    html: `<div class="train-token" style="--c:${color}"><div class="train-bob"><div class="train-arrow"></div><span class="train-emoji">🚇</span></div></div>`,
+    iconSize: [44, 44],
+    iconAnchor: [22, 22],
   })
 }
 

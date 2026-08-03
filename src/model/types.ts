@@ -36,6 +36,10 @@ export interface Line {
   speedKmh?: number
   /** 区间时速覆盖：key 为区间序号（stationIds[i]→stationIds[i+1] 的 i），值 km/h */
   segmentSpeeds?: Record<number, number>
+  /** 线路默认地上/地下（未单独设置区间时跟随此项），默认 ground */
+  defaultGround?: 'ground' | 'under'
+  /** 区间地上/地下标记：key 同 segmentSpeeds（stationIds[i]→stationIds[i+1] 的 i） */
+  segmentGround?: Record<number, 'ground' | 'under'>
 }
 
 /** 自由画笔笔迹（手绘装饰线，无站点概念、不计里程） */

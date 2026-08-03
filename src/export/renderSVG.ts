@@ -3,6 +3,7 @@ import { isTransfer, stationColor } from '../model/transfer'
 import { fitToCanvas, projectMerc, type Pt } from './project'
 import { smoothPathD, straightPathD } from '../utils/smooth'
 import { formatDistance, lineLengthMeters } from '../utils/geo'
+import { lineSegments } from '../utils/lineSegments'
 
 export interface ExportOptions {
   background: 'white' | 'transparent'
@@ -213,14 +214,23 @@ export function exportWorkToSVG(
         b: pts[i].id,
       })
     }
-    const canvasPts = pts.map((s) => s.c)
-    const d =
-      (line.pathMode ?? 'straight') === 'smooth' ? smoothPathD(canvasPts) : straightPathD(canvasPts)
-    const dash = (line.style ?? 'solid') === 'dashed' ? ' stroke-dasharray="22 18"' : ''
-    parts.push(
-      `<path d="${d}" fill="none" stroke="#ffffff" stroke-width="${LINE_CASING_W}" stroke-linecap="round" stroke-linejoin="round"${dash}/>`,
-      `<path d="${d}" fill="none" stroke="${line.color}" stroke-width="${LINE_CORE_W}" stroke-linecap="round" stroke-linejoin="round"${dash}/>`,
-    )
+    // 按站间区间渲染，区分地上/地下（地下=虚线+暗灰描边+降透明度）
+    const segs = lineSegments(line, work.stations)
+    const lineDashed = (line.style ?? 'solid') === 'dashed'
+    for (const part of segs) {
+      const under = part.ground === 'under'
+      const dashed = under || lineDashed
+      const canvasPts = part.pts.map(([lat, lng]) => fit.toCanvas(projectMerc(lat, lng)))
+      if (canvasPts.length < 2) continue
+      // 平滑模式每段已是密集采样点，用 smoothPathD 生成贝塞尔曲线（C 命令）；
+      // 直线段仅 2 点，smoothPathD 退化为直线，行为与旧版一致
+      const d = smoothPathD(canvasPts)
+      const dashAttr = dashed ? ' stroke-dasharray="22 18"' : ''
+      parts.push(
+        `<path d="${d}" fill="none" stroke="${under ? '#4b5563' : '#ffffff'}" stroke-width="${under ? LINE_CASING_W - 3 : LINE_CASING_W}" stroke-linecap="round" stroke-linejoin="round" opacity="${under ? 0.6 : 1}"${dashAttr}/>`,
+        `<path d="${d}" fill="none" stroke="${line.color}" stroke-width="${under ? LINE_CORE_W - 3 : LINE_CORE_W}" stroke-linecap="round" stroke-linejoin="round" opacity="${under ? 0.85 : 1}"${dashAttr}/>`,
+      )
+    }
   }
 
   // 4. 站点

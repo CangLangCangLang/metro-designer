@@ -10,6 +10,9 @@ interface CityWithPinyin {
   full: string
 }
 
+/** 最多渲染的候选城市数（其余提示「继续输入缩小范围」），避免一次渲染几百个按钮卡顿 */
+const MAX_RENDER = 80
+
 const CITY_INDEX: CityWithPinyin[] = CITIES.map((city) => ({
   city,
   initials: pinyin(city.name, { pattern: 'first', toneType: 'none', type: 'array' })
@@ -88,7 +91,7 @@ export function CityPicker() {
             <input
               className="dialog-input"
               autoFocus
-              placeholder="输入城市名或拼音，如：兰州 / lz / lanzhou"
+              placeholder="输入城市名或拼音首字母，如：兰州 / lz / lanzhou"
               value={query}
               onChange={(e) => {
                 setQuery(e.target.value)
@@ -109,7 +112,7 @@ export function CityPicker() {
             {error && <div className="city-search-error">😢 {error}</div>}
 
             <div className="city-grid">
-              {filtered.map(({ city }) => (
+              {filtered.slice(0, MAX_RENDER).map(({ city }) => (
                 <button
                   key={city.key}
                   className="city-item"
@@ -119,6 +122,11 @@ export function CityPicker() {
                 </button>
               ))}
             </div>
+            {filtered.length > MAX_RENDER && (
+              <div className="city-more-hint">
+                还有 {filtered.length - MAX_RENDER} 个结果，继续输入拼音首字母缩小范围～
+              </div>
+            )}
 
             {query.trim() && (
               <button

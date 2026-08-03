@@ -358,29 +358,71 @@ select {
 
 /* ---------- 线路样式切换 / 里程 / 站点列表 ---------- */
 
-.line-style-row {
-  gap: 4px !important;
-  flex-wrap: wrap;
+/* 线路设置：分组清晰布局（线型 / 走线 / 时速 / 地面） */
+.line-card-section {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px dashed rgba(60, 80, 180, 0.2);
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
 }
 
-.style-btn {
-  flex: 1;
-  min-width: 0;
-  min-height: 34px;
-  padding: 3px 4px;
-  border: 2px solid transparent;
-  border-radius: 8px;
-  background: rgba(79, 124, 255, 0.08);
+.section-label {
   font-size: 12px;
   font-weight: 700;
   color: var(--text-light);
-  white-space: nowrap;
+  margin-top: 2px;
 }
 
-.style-btn.style-on {
+.section-hint {
+  font-weight: 500;
+  opacity: 0.7;
+  font-size: 11px;
+}
+
+.section-note {
+  font-size: 11px;
+  color: var(--text-light);
+  opacity: 0.8;
+  line-height: 1.4;
+}
+
+.seg-group {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.pill-btn {
+  flex: 1;
+  min-width: 56px;
+  min-height: 38px;
+  padding: 4px 8px;
+  border: 2px solid transparent;
+  border-radius: 10px;
+  background: rgba(79, 124, 255, 0.08);
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-light);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: border-color 0.12s ease, background 0.12s ease;
+}
+
+.pill-btn:hover {
+  background: rgba(79, 124, 255, 0.14);
+}
+
+.pill-btn.pill-on {
   border-color: var(--primary);
   background: rgba(79, 124, 255, 0.2);
   color: var(--text);
+}
+
+.pill-speed {
+  flex: 1 1 0;
+  min-width: 0;
 }
 
 .line-detail-toggle {
@@ -435,7 +477,31 @@ select {
   color: var(--text-light);
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 6px;
+}
+
+.gap-btns {
+  display: flex;
+  gap: 4px;
+  flex: none;
+}
+
+.seg-ground-btn {
+  border: none;
+  border-radius: 7px;
+  background: rgba(79, 124, 255, 0.1);
+  padding: 1px 7px;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-light);
+  line-height: 1.6;
+  cursor: pointer;
+}
+
+.seg-ground-btn.seg-under {
+  background: #4b5563;
+  color: #fff;
 }
 
 .seg-speed-btn {
@@ -712,6 +778,13 @@ select {
   background: var(--primary);
   color: #fff;
   transform: scale(1.04);
+}
+
+.city-more-hint {
+  font-size: 13px;
+  color: var(--text-light);
+  text-align: center;
+  padding: 6px 4px 0;
 }
 
 .city-search-error {
@@ -1261,36 +1334,72 @@ select {
 }
 
 .train-token {
-  width: 22px;
-  height: 22px;
-  margin: 4px;
-  border-radius: 50%;
-  background: var(--c, #e60012);
-  border: 3px solid #fff;
-  box-shadow: 0 1px 6px rgba(0, 0, 0, 0.4);
-  position: relative;
+  width: 44px;
+  height: 44px;
   display: flex;
   align-items: center;
   justify-content: center;
+  /* JS 在此设置 transform: rotate(bearing) 让列车朝行进方向 */
+}
+
+.train-bob {
+  position: relative;
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: var(--c, #e60012);
+  border: 3px solid #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  /* 浮动 + 光晕脉冲：跑动更生动；独立层避免与 JS 旋转冲突 */
+  animation: train-bob 0.9s ease-in-out infinite;
+}
+
+@keyframes train-bob {
+  0%,
+  100% {
+    transform: translateY(0) scale(1);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.45), 0 0 0 0 rgba(255, 255, 255, 0.55);
+  }
+  50% {
+    transform: translateY(-3px) scale(1.07);
+    box-shadow: 0 5px 13px rgba(0, 0, 0, 0.5), 0 0 0 7px rgba(255, 255, 255, 0);
+  }
 }
 
 .train-arrow {
   position: absolute;
   left: 50%;
-  top: -10px;
+  top: -11px;
   transform: translateX(-50%);
   width: 0;
   height: 0;
-  border-left: 6px solid transparent;
-  border-right: 6px solid transparent;
-  border-bottom: 8px solid var(--c, #e60012);
+  border-left: 7px solid transparent;
+  border-right: 7px solid transparent;
+  border-bottom: 9px solid var(--c, #e60012);
 }
 
 .train-emoji {
-  font-size: 12px;
+  font-size: 22px;
   line-height: 1;
   display: block;
+  /* JS 在此设置 transform: rotate(-bearing) 保持车头 emoji 正向 */
 }
+
+/* ---------- 自由画笔覆盖层 ---------- */
+/* 覆盖在地图之上，吃掉所有指针事件，使画笔模式下地图不会平移/缩放 */
+.freehand-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 1000;
+  background: transparent;
+  cursor: crosshair;
+  /* 关键：禁止浏览器对触屏手势的默认滚动与双指缩放 */
+  touch-action: none;
+  /* 画笔模式下给地图一点点提示色 */
+}
+
 
 /* ---------- Leaflet 自定义：贴纸 ---------- */
 

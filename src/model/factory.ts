@@ -56,6 +56,7 @@ export function createLine(name: string, color: string): Line {
     style: 'solid',
     pathMode: 'straight',
     speedKmh: 80,
+    defaultGround: 'ground',
   }
 }
 
@@ -102,6 +103,7 @@ export function normalizeWork(work: Work): Work {
     line.style ??= 'solid'
     line.pathMode ??= 'straight'
     line.speedKmh ??= 80
+    line.defaultGround ??= 'ground'
   }
   work.freehands ??= []
   return work
