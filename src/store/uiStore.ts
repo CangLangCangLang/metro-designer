@@ -27,6 +27,8 @@ interface UIStore {
   toolbarCollapsed: boolean
   /** 线路面板已收起（只留小按钮） */
   linePanelCollapsed: boolean
+  /** 自动保存状态：saving 保存中 / saved 已保存（给用户安心反馈） */
+  saveStatus: 'saving' | 'saved'
 
   setMode(mode: EditMode): void
   setActiveLine(id: string | null): void
@@ -41,6 +43,7 @@ interface UIStore {
   setStickerPanelOpen(open: boolean): void
   setToolbarCollapsed(collapsed: boolean): void
   setLinePanelCollapsed(collapsed: boolean): void
+  setSaveStatus(status: 'saving' | 'saved'): void
   /** 切换作品/页面时复位瞬态 */
   resetTransient(): void
 }
@@ -60,6 +63,7 @@ export const useUIStore = create<UIStore>((set) => ({
   // 默认收起（孩子反馈面板太占地图）：只有显式展开过才展开
   toolbarCollapsed: localStorage.getItem(TOOLBAR_COLLAPSED_KEY) !== '0',
   linePanelCollapsed: localStorage.getItem(LINE_PANEL_COLLAPSED_KEY) !== '0',
+  saveStatus: 'saved',
 
   setMode: (mode) => set({ mode, placingStickerEmoji: null }),
   setActiveLine: (id) => set({ activeLineId: id }),
@@ -94,4 +98,5 @@ export const useUIStore = create<UIStore>((set) => ({
       stickerPanelOpen: false,
       mode: 'draw',
     }),
+  setSaveStatus: (status) => set({ saveStatus: status }),
 }))

@@ -3,7 +3,15 @@ import { useWorkStore } from '../store/workStore'
 import { useUIStore } from '../store/uiStore'
 import { linesOfStation } from '../model/transfer'
 
-/** 底部选中操作栏：站点（改名/删除）与贴纸（缩放/旋转/删除），触屏大按钮 */
+/** 可选站点图标（儿童友好的常见地标点） */
+const STATION_ICON_CHOICES = [
+  '🏥', '🏫', '🏟️', '🚉', '🏰', '⛪',
+  '🏦', '🏪', '🌳', '🏖️', '🗼', '🎡',
+  '🏠', '🏢', '🚇', '✈️', '🚌', '🚏',
+  '🏛️', '🎠', '🏬', '⛲',
+]
+
+/** 底部选中操作栏：站点（改名/删除/出口/图标）与贴纸（缩放/旋转/删除），触屏大按钮 */
 export function SelectionBar() {
   const work = useWorkStore((s) => s.work)
   const renameStation = useWorkStore((s) => s.renameStation)
@@ -12,6 +20,10 @@ export function SelectionBar() {
   const deleteSticker = useWorkStore((s) => s.deleteSticker)
   const deleteFreehand = useWorkStore((s) => s.deleteFreehand)
   const removeStationFromLine = useWorkStore((s) => s.removeStationFromLine)
+  const addStationExit = useWorkStore((s) => s.addStationExit)
+  const updateStationExitLabel = useWorkStore((s) => s.updateStationExitLabel)
+  const removeStationExit = useWorkStore((s) => s.removeStationExit)
+  const setStationIcon = useWorkStore((s) => s.setStationIcon)
   const selectedStationId = useUIStore((s) => s.selectedStationId)
   const selectedStickerId = useUIStore((s) => s.selectedStickerId)
   const selectedFreehandId = useUIStore((s) => s.selectedFreehandId)
@@ -55,8 +67,9 @@ export function SelectionBar() {
   if (station) {
     const lines = linesOfStation(work, station.id)
     const isTransferStation = lines.length >= 2
+    const exits = station.exits ?? []
     return (
-      <div className="selection-bar">
+      <div className="selection-bar scroll-x">
         <span className="selection-title">📍 车站</span>
         <input
           className="station-name-input"
@@ -66,6 +79,14 @@ export function SelectionBar() {
           onKeyDown={(e) => e.key === 'Enter' && (e.target as HTMLInputElement).blur()}
           placeholder="给车站起个名字"
         />
+
+        {isTransferStation && (
+          <span className="transfer-badge" title="这是换乘站，同时属于多条线路">
+            🔄 换乘 ×{lines.length}
+          </span>
+        )}
+
+        {/* 换乘站：所属线路 chips，可单线移出 */}
         {isTransferStation && (
           <span className="transfer-lines" title="这个站属于这些线路">
             {lines.map((l) => (
@@ -83,6 +104,67 @@ export function SelectionBar() {
             ))}
           </span>
         )}
+        {isTransferStation && (
+          <span className="transfer-hint">提示：在另一线路的「画线」模式下点这个站，即可加换乘</span>
+        )}
+
+        {/* 图标选择 */}
+        <div className="sel-section">
+          <span className="sel-section-label">图标</span>
+          <div className="icon-grid">
+            <button
+              className={`icon-choice ${!station.icon ? 'icon-on' : ''}`}
+              title="默认圆点"
+              onClick={() => setStationIcon(station.id, null)}
+            >
+              <span className="icon-dot-default" />
+            </button>
+            {STATION_ICON_CHOICES.map((em) => (
+              <button
+                key={em}
+                className={`icon-choice ${station.icon === em ? 'icon-on' : ''}`}
+                title="设为该图标"
+                onClick={() => setStationIcon(station.id, em)}
+              >
+                {em}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* 出口编辑 */}
+        <div className="sel-section">
+          <span className="sel-section-label">出口</span>
+          <div className="exit-row">
+            {exits.length === 0 && <span className="exit-empty">暂无出口</span>}
+            {exits.map((ex) => (
+              <span key={ex.id} className="exit-chip">
+                <input
+                  className="exit-label-input"
+                  value={ex.label}
+                  maxLength={4}
+                  onChange={(e) => updateStationExitLabel(station.id, ex.id, e.target.value)}
+                  title="出口编号"
+                />
+                <button
+                  className="exit-remove"
+                  title="删除该出口"
+                  onClick={() => removeStationExit(station.id, ex.id)}
+                >
+                  ✖
+                </button>
+              </span>
+            ))}
+            <button
+              className="btn btn-sm"
+              title="添加一个出口（自动编号 A/B/C…）"
+              onClick={() => addStationExit(station.id)}
+            >
+              ＋ 出口
+            </button>
+          </div>
+        </div>
+
         <button
           className="btn btn-danger"
           onClick={() => {

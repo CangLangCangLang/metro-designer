@@ -241,7 +241,29 @@ export function exportWorkToSVG(
     const transfer = isTransfer(work, st.id)
     const color = stationColor(work, st.id)
     const r = transfer ? TRANSFER_R : STATION_R
-    if (transfer) {
+
+    // 出口：环绕站点均匀排布（与编辑器一致，角度顺时针由 +x 起算）
+    const exits = st.exits ?? []
+    if (exits.length) {
+      const er = r + 14
+      exits.forEach((ex, i) => {
+        const ang = ((ex.angle ?? (i * 360) / exits.length) * Math.PI) / 180
+        const ex2 = c.x + er * Math.cos(ang)
+        const ey2 = c.y + er * Math.sin(ang)
+        parts.push(
+          `<circle cx="${ex2.toFixed(1)}" cy="${ey2.toFixed(1)}" r="11" fill="#ffffff" stroke="${color}" stroke-width="3"/>`,
+          `<text x="${ex2.toFixed(1)}" y="${ey2.toFixed(1)}" font-size="14" font-weight="700" fill="#333333" text-anchor="middle" dominant-baseline="central">${esc(ex.label)}</text>`,
+        )
+      })
+    }
+
+    if (st.icon) {
+      // 自定义 emoji 图标（保留线路色环）
+      parts.push(
+        `<circle cx="${c.x.toFixed(1)}" cy="${c.y.toFixed(1)}" r="${r}" fill="#ffffff" stroke="${color}" stroke-width="${transfer ? 5 : 4}"/>`,
+        `<text x="${c.x.toFixed(1)}" y="${c.y.toFixed(1)}" font-size="${transfer ? 34 : 28}" text-anchor="middle" dominant-baseline="central">${esc(st.icon)}</text>`,
+      )
+    } else if (transfer) {
       parts.push(
         `<circle cx="${c.x.toFixed(1)}" cy="${c.y.toFixed(1)}" r="${r}" fill="#ffffff" stroke="${color}" stroke-width="6"/>`,
         `<circle cx="${c.x.toFixed(1)}" cy="${c.y.toFixed(1)}" r="${r - 8}" fill="#ffffff" stroke="${color}" stroke-width="3"/>`,

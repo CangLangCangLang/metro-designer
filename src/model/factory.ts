@@ -1,7 +1,7 @@
 import type { FreehandStroke, Line, Station, Sticker, Work } from './types'
 import { newId } from '../utils/id'
 
-/** 儿童友好线路调色板（参照真实地铁常用色） */
+/** 儿童友好线路调色板（参照真实地铁常用色 + 高区分度补充色，共 24 种） */
 export const LINE_COLORS = [
   '#E60012', // 红
   '#005BAC', // 蓝
@@ -15,6 +15,18 @@ export const LINE_COLORS = [
   '#3949AB', // 靛蓝
   '#7CB342', // 浅绿
   '#757575', // 灰
+  '#E91E63', // 玫红
+  '#1DE9B6', // 薄荷
+  '#FF6F00', // 深橙
+  '#3D5AFE', // 宝蓝
+  '#00BFA5', // 蓝绿
+  '#D81B60', // 胭脂
+  '#AEEA00', // 柠檬
+  '#5D4037', // 咖啡
+  '#00838F', // 青蓝
+  '#8D6E63', // 驼色
+  '#C0CA33', // 橄榄
+  '#90A4AE', // 蓝灰
 ]
 
 /** 生成下一个线路默认名：1号线、2号线……（跳过已占用的数字） */
@@ -94,17 +106,31 @@ export function createWork(
     freehands: [],
     createdAt: now,
     updatedAt: now,
+    schemaVersion: CURRENT_SCHEMA_VERSION,
   }
 }
 
-/** 旧版本作品数据补默认值（加载/导入时调用，原地修改并返回） */
+/** 旧版本作品数据补默认值（加载/导入时调用，原地修改并返回）。
+ *  通过 schemaVersion 做前向迁移，保证老作品在新版本里不丢不乱。 */
+export const CURRENT_SCHEMA_VERSION = 2
+
 export function normalizeWork(work: Work): Work {
+  const from = work.schemaVersion ?? 1
   for (const line of work.lines) {
     line.style ??= 'solid'
     line.pathMode ??= 'straight'
     line.speedKmh ??= 80
     line.defaultGround ??= 'ground'
   }
+  // 站点级新字段（v2：icon / exits）
+  for (const st of Object.values(work.stations)) {
+    if (from < 2) {
+      if (st.exits === undefined) st.exits = []
+    }
+    // 清理非法出口数据
+    if (st.exits && !Array.isArray(st.exits)) st.exits = []
+  }
   work.freehands ??= []
+  work.schemaVersion = CURRENT_SCHEMA_VERSION
   return work
 }

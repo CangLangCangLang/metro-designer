@@ -12,20 +12,40 @@ interface Props {
   work: Work
 }
 
-function stationIcon(color: string, transfer: boolean, selected: boolean, snapPreview: boolean) {
-  const cls = [
-    'st-dot',
-    transfer ? 'transfer' : '',
+function escapeHtml(s: string): string {
+  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+}
+
+function stationIcon(
+  color: string,
+  transfer: boolean,
+  selected: boolean,
+  snapPreview: boolean,
+  station: Station,
+) {
+  const wrapCls = [
+    'st-wrap',
     selected ? 'selected' : '',
     snapPreview ? 'snap-preview' : '',
   ]
     .filter(Boolean)
     .join(' ')
+  // 自定义图标（emoji）或默认圆点
+  const shape = station.icon
+    ? `<div class="st-icon ${transfer ? 'transfer' : ''}"><span class="st-emoji">${escapeHtml(station.icon)}</span></div>`
+    : `<div class="st-dot ${transfer ? 'transfer' : ''}"></div>`
+  // 出口：环绕站点均匀排布（可指定 angle 微调方向）
+  const exits = (station.exits ?? [])
+    .map((ex, i) => {
+      const angle = ex.angle ?? (i * 360) / Math.max(1, station.exits!.length)
+      return `<span class="st-exit" style="--a:${angle}deg">${escapeHtml(ex.label)}</span>`
+    })
+    .join('')
   return L.divIcon({
     className: 'station-marker',
-    html: `<div class="${cls}" style="--c:${color}"></div>`,
-    iconSize: [34, 34],
-    iconAnchor: [17, 17],
+    html: `<div class="${wrapCls}" style="--c:${color}">${shape}<div class="st-exits">${exits}</div></div>`,
+    iconSize: [72, 72],
+    iconAnchor: [36, 36],
   })
 }
 
@@ -52,8 +72,8 @@ export function StationMarker({ station, work }: Props) {
   const snapPreview = snapPreviewId === station.id
 
   const icon = useMemo(
-    () => stationIcon(color, transfer, selected, snapPreview),
-    [color, transfer, selected, snapPreview],
+    () => stationIcon(color, transfer, selected, snapPreview, station),
+    [color, transfer, selected, snapPreview, station.icon, station.exits],
   )
 
   // 站名标签：奇偶交替左右摆放；手动微调优先

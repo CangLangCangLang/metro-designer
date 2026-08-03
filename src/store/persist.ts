@@ -2,7 +2,7 @@ import localforage from 'localforage'
 import type { Work, WorkIndexItem } from '../model/types'
 import { normalizeWork } from '../model/factory'
 import { useWorkStore } from './workStore'
-import { debounce } from '../utils/debounce'
+import { useUIStore } from './uiStore'
 import { exportWorkToSVG } from '../export/renderSVG'
 import { svgToPngDataUrl } from '../export/svgToPng'
 
@@ -69,19 +69,56 @@ export async function removeWork(id: string): Promise<void> {
   await writeIndex((items) => items.filter((i) => i.id !== id))
 }
 
-/** 挂载自动保存：work 变化后 1s 防抖落盘。返回解绑函数。 */
+/** 挂载自动保存：work 变化后 1s 防抖落盘；关闭/刷新页面时立即落盘，绝不丢失。返回解绑函数。 */
 export function attachAutosave(): () => void {
-  const save = debounce((work: Work) => {
-    void saveWorkNow(work)
-  }, 1000)
-  let last: Work | null = useWorkStore.getState().work
+  const setStatus = (s: 'saving' | 'saved') => useUIStore.getState().setSaveStatus(s)
+  let saveTimer: ReturnType<typeof setTimeout> | null = null
+  let latest: Work | null = useWorkStore.getState().work
+  let dirty = false
+
+  const flush = () => {
+    if (saveTimer) {
+      clearTimeout(saveTimer)
+      saveTimer = null
+    }
+    if (latest) void saveWorkNow(latest)
+    dirty = false
+  }
+
+  const schedule = (work: Work) => {
+    latest = work
+    dirty = true
+    setStatus('saving')
+    if (saveTimer) clearTimeout(saveTimer)
+    saveTimer = setTimeout(() => {
+      void saveWorkNow(work).then(() => setStatus('saved'))
+      saveTimer = null
+      dirty = false
+    }, 1000)
+  }
+
   const unsub = useWorkStore.subscribe((state) => {
-    if (state.work && state.work !== last) {
-      last = state.work
-      save(state.work)
+    if (state.work && state.work !== latest) {
+      schedule(state.work)
     } else if (!state.work) {
-      last = null
+      latest = null
     }
   })
-  return unsub
+
+  // 关闭 / 刷新 / 切后台时立即落盘，堵住「防抖窗口内丢失」的漏洞
+  const onHide = () => {
+    if (dirty) flush()
+  }
+  window.addEventListener('beforeunload', onHide)
+  window.addEventListener('pagehide', onHide)
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'hidden') onHide()
+  })
+
+  return () => {
+    unsub()
+    window.removeEventListener('beforeunload', onHide)
+    window.removeEventListener('pagehide', onHide)
+    document.removeEventListener('visibilitychange', onHide)
+  }
 }

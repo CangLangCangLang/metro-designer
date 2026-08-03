@@ -32,6 +32,7 @@ export function Toolbar() {
   const setPlacingSticker = useUIStore((s) => s.setPlacingSticker)
   const toolbarCollapsed = useUIStore((s) => s.toolbarCollapsed)
   const setToolbarCollapsed = useUIStore((s) => s.setToolbarCollapsed)
+  const saveStatus = useUIStore((s) => s.saveStatus)
 
   const [nameDraft, setNameDraft] = useState(work?.name ?? '')
   const [exportOpen, setExportOpen] = useState(false)
@@ -108,6 +109,12 @@ export function Toolbar() {
         />
         <CityPicker />
         <BaseLayerPicker />
+        <span
+          className={`save-status ${saveStatus}`}
+          title={saveStatus === 'saving' ? '正在自动保存到本机' : '已自动保存到本机，刷新不丢'}
+        >
+          {saveStatus === 'saving' ? '💾 保存中' : '✅ 已保存'}
+        </span>
         <button
           className="icon-btn"
           onClick={() => setToolbarCollapsed(true)}

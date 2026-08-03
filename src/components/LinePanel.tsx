@@ -13,9 +13,27 @@ import {
 } from '../utils/geo'
 import type { Line, Work } from '../model/types'
 
-/** 线路站点详情：站名列表 + 站间距 + 区间时速 + 全程时间 */
+/** 计算插入位置：在 beforeIndex 之前插入时，新站的默认经纬度（邻居中点；首站前则北偏） */
+function insertLatLng(
+  line: Line,
+  work: Work,
+  beforeIndex: number,
+): { lat: number; lng: number } {
+  const ids = line.stationIds
+  if (beforeIndex > 0) {
+    const a = work.stations[ids[beforeIndex - 1]]
+    const b = work.stations[ids[beforeIndex]]
+    if (a && b) return { lat: (a.lat + b.lat) / 2, lng: (a.lng + b.lng) / 2 }
+  }
+  const first = work.stations[ids[0]]
+  if (first) return { lat: first.lat + 0.004, lng: first.lng }
+  return work.view
+}
+
+/** 线路站点详情：站名列表 + 站间距 + 区间时速 + 全程时间 + 插入上一站 */
 function StationList({ line, work }: { line: Line; work: Work }) {
   const updateLine = useWorkStore((s) => s.updateLine)
+  const insertStation = useWorkStore((s) => s.insertStation)
   const stops = line.stationIds
     .map((id) => work.stations[id])
     .filter((s): s is NonNullable<typeof s> => Boolean(s))
@@ -48,6 +66,17 @@ function StationList({ line, work }: { line: Line; work: Work }) {
     <div className="station-list">
       {stops.map((st, i) => (
         <div key={st.id}>
+          {/* 在每一站之前都可插入「上一站」（首站前也能插） */}
+          <button
+            className="insert-before-btn"
+            title="在这一站前面插入一个新车站"
+            onClick={() => {
+              const p = insertLatLng(line, work, i)
+              insertStation(line.id, i, p.lat, p.lng)
+            }}
+          >
+            ＋ 上一站
+          </button>
           {i > 0 && (
             <div className="station-list-gap">
               <span>↓ {formatDistance(lens[i - 1] ?? 0)}</span>
@@ -77,6 +106,22 @@ function StationList({ line, work }: { line: Line; work: Work }) {
           </div>
         </div>
       ))}
+      {/* 末尾也能插入（等价于在画线模式点地图追加） */}
+      {stops.length > 0 && (
+        <button
+          className="insert-before-btn insert-at-end"
+          title="在线路末尾再添加一个车站"
+          onClick={() => {
+            const last = work.stations[line.stationIds[line.stationIds.length - 1]]
+            const p = last
+              ? { lat: last.lat + 0.004, lng: last.lng }
+              : work.view
+            insertStation(line.id, line.stationIds.length, p.lat, p.lng)
+          }}
+        >
+          ＋ 下一站
+        </button>
+      )}
       {stops.length >= 2 && (
         <div className="trip-time">🕐 全程 {formatDuration(minutes)}</div>
       )}

@@ -1,3 +1,12 @@
+/** 站点出口（环绕站点的小标记，可自定义编号如 A/B/C） */
+export interface StationExit {
+  id: string
+  /** 出口编号/名称，如 "A"、"B1" */
+  label: string
+  /** 出口方向角（度，0=正右/东，顺时针）。不填则按序号均匀环绕 */
+  angle?: number
+}
+
 /** 站点：唯一地理实体，可被多条线路引用（换乘站的关键设计） */
 export interface Station {
   id: string
@@ -6,6 +15,10 @@ export interface Station {
   lng: number
   /** 导出/编辑器标注手动微调偏移（像素） */
   labelOffset?: { dx: number; dy: number }
+  /** 自定义站点图标 emoji（如 🏥🏫）；不填则显示默认圆环圆点 */
+  icon?: string
+  /** 站点出口列表（环绕显示，含编号） */
+  exits?: StationExit[]
 }
 
 export type TrainSpeed = 1 | 2 | 3
@@ -74,6 +87,8 @@ export interface Work {
   freehands?: FreehandStroke[]
   createdAt: number
   updatedAt: number
+  /** 数据架构版本（旧作品可能缺）；normalizeWork 据此迁移，保证前后兼容 */
+  schemaVersion?: number
 }
 
 /** 画廊索引条目 */

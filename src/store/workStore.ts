@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import type { Line, Sticker, Work } from '../model/types'
+import type { Line, Sticker, StationExit, Work } from '../model/types'
 import { cleanupOrphanStations } from '../model/transfer'
 import {
   createFreehand,
@@ -28,6 +28,35 @@ function reindexSegRecord<T>(
     if (i < k - 1) next[i] = val // 被删区域之前的区间：序号不变
     else if (i > k) next[i - 1] = val // 之后的区间：整体前移一位
     // i === k-1 或 i === k 为与删除站相邻、被合并的区间：丢弃
+  }
+  return next
+}
+
+/** 在线路 stationIds 的 beforeIndex 处插入 stationId，并同步后移区间记录 */
+function insertIntoLine(line: Line, beforeIndex: number, stationId: string): Line {
+  const ids = [...line.stationIds]
+  ids.splice(beforeIndex, 0, stationId)
+  return {
+    ...line,
+    stationIds: ids,
+    segmentSpeeds: shiftSegRecordUp(line.segmentSpeeds, beforeIndex),
+    segmentGround: shiftSegRecordUp(line.segmentGround, beforeIndex),
+  }
+}
+
+/**
+ * 在 beforeIndex 处插入一个区间后，把按区间序号存储的 Record 整体后移一位，
+ * 保持 key 与新 stationIds 对齐。k 为插入位置。
+ */
+function shiftSegRecordUp<T>(
+  rec: Record<number, T> | undefined,
+  at: number,
+): Record<number, T> | undefined {
+  if (!rec) return rec
+  const next: Record<number, T> = {}
+  for (const [key, val] of Object.entries(rec)) {
+    const i = Number(key)
+    next[i >= at ? i + 1 : i] = val
   }
   return next
 }
@@ -66,11 +95,28 @@ interface WorkStore {
   // ---- 站点 ----
   /** 向线路末尾追加站点；snapStationId 存在则复用已有站点（形成换乘）。返回站点 id */
   addStation(lineId: string, lat: number, lng: number, snapStationId?: string): string
+  /** 在线路指定下标前插入站点（新增上一站）；beforeIndex 为插入后该站在 stationIds 的位置。
+   *  snapStationId 存在则插入已有站（换乘），否则在 (lat,lng) 新建站。返回站点 id */
+  insertStation(
+    lineId: string,
+    beforeIndex: number,
+    lat: number,
+    lng: number,
+    snapStationId?: string,
+  ): string
   renameStation(stationId: string, name: string): void
   /** 拖拽结束移动站点；snapToLineId 存在时尝试吸附到该线路附近站点由调用方处理 */
   moveStation(stationId: string, lat: number, lng: number): void
   removeStationFromLine(lineId: string, stationId: string): void
   deleteStation(stationId: string): void
+  /** 给站点添加出口（自动编号 A/B/C…）；返回新出口 id */
+  addStationExit(stationId: string): string
+  /** 修改某个出口的编号/名称 */
+  updateStationExitLabel(stationId: string, exitId: string, label: string): void
+  /** 删除站点某个出口 */
+  removeStationExit(stationId: string, exitId: string): void
+  /** 设置/清除站点自定义图标（emoji；传 null 还原为默认圆点） */
+  setStationIcon(stationId: string, icon: string | null): void
 
   // ---- 贴纸 ----
   addSticker(emoji: string, lat: number, lng: number): string
@@ -272,6 +318,98 @@ export const useWorkStore = create<WorkStore>((set, get) => ({
         }
       })
       return cleanupOrphanStations({ ...w, lines })
+    })
+  },
+
+  insertStation(lineId, beforeIndex, lat, lng, snapStationId) {
+    const work = get().work
+    if (!work) return ''
+    const snapId = snapStationId && work.stations[snapStationId] ? snapStationId : undefined
+    if (!snapId) {
+      const seq = Object.keys(work.stations).length + 1
+      const st = createStation(`车站${seq}`, lat, lng)
+      get().mutate((w) => ({
+        ...w,
+        stations: { ...w.stations, [st.id]: st },
+        lines: w.lines.map((l) =>
+          l.id === lineId ? insertIntoLine(l, beforeIndex, st.id) : l,
+        ),
+      }))
+      return st.id
+    }
+    get().mutate((w) => ({
+      ...w,
+      lines: w.lines.map((l) =>
+        l.id === lineId ? insertIntoLine(l, beforeIndex, snapId) : l,
+      ),
+    }))
+    return snapId
+  },
+
+  addStationExit(stationId) {
+    let createdId = ''
+    get().mutate((w) => {
+      const st = w.stations[stationId]
+      if (!st) return w
+      const exits = st.exits ?? []
+      const used = new Set(exits.map((e) => e.label.toUpperCase()))
+      let label = 'A'
+      for (let c = 65; c <= 90; c++) {
+        const cand = String.fromCharCode(c)
+        if (!used.has(cand)) {
+          label = cand
+          break
+        }
+      }
+      const exit: StationExit = { id: newId(), label }
+      createdId = exit.id
+      return {
+        ...w,
+        stations: { ...w.stations, [stationId]: { ...st, exits: [...exits, exit] } },
+      }
+    })
+    return createdId
+  },
+
+  updateStationExitLabel(stationId, exitId, label) {
+    get().mutate((w) => {
+      const st = w.stations[stationId]
+      if (!st?.exits) return w
+      return {
+        ...w,
+        stations: {
+          ...w.stations,
+          [stationId]: {
+            ...st,
+            exits: st.exits.map((e) => (e.id === exitId ? { ...e, label } : e)),
+          },
+        },
+      }
+    })
+  },
+
+  removeStationExit(stationId, exitId) {
+    get().mutate((w) => {
+      const st = w.stations[stationId]
+      if (!st?.exits) return w
+      return {
+        ...w,
+        stations: {
+          ...w.stations,
+          [stationId]: { ...st, exits: st.exits.filter((e) => e.id !== exitId) },
+        },
+      }
+    })
+  },
+
+  setStationIcon(stationId, icon) {
+    get().mutate((w) => {
+      const st = w.stations[stationId]
+      if (!st) return w
+      return {
+        ...w,
+        stations: { ...w.stations, [stationId]: { ...st, icon: icon ?? undefined } },
+      }
     })
   },
 
