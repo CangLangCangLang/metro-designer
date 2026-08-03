@@ -72,8 +72,19 @@ export function createLine(name: string, color: string): Line {
   }
 }
 
+/** 站点默认图标池（儿童友好的常见地标 emoji）。新车站默认随机取一个，让地图更生动，
+ *  不再是清一色圆点；用户仍可在选中栏把单个站改回"默认圆点"。 */
+export const STATION_ICON_POOL = [
+  '🏥', '🏫', '🏟️', '🚉', '🏰', '⛪',
+  '🏦', '🏪', '🌳', '🏖️', '🗼', '🎡',
+  '🏠', '🏢', '🚇', '✈️', '🚌', '🚏',
+  '🏛️', '🎠', '🏬', '⛲', '🍔', '☕',
+  '🛒', '⛽', '🏯', '🗽',
+]
+
 export function createStation(name: string, lat: number, lng: number): Station {
-  return { id: newId(), name, lat, lng }
+  const icon = STATION_ICON_POOL[Math.floor(Math.random() * STATION_ICON_POOL.length)]
+  return { id: newId(), name, lat, lng, icon }
 }
 
 export function createSticker(emoji: string, lat: number, lng: number): Sticker {
@@ -84,8 +95,10 @@ export function createFreehand(
   color: string,
   points: { lat: number; lng: number }[],
   width: 1 | 2 | 3 = 2,
+  startStationId: string | null = null,
+  endStationId: string | null = null,
 ): FreehandStroke {
-  return { id: newId(), color, points, width }
+  return { id: newId(), color, points, width, startStationId, endStationId }
 }
 
 export function createWork(

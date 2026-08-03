@@ -3,13 +3,30 @@ import { useWorkStore } from '../store/workStore'
 import { useUIStore } from '../store/uiStore'
 import { linesOfStation } from '../model/transfer'
 
-/** 可选站点图标（儿童友好的常见地标点） */
-const STATION_ICON_CHOICES = [
-  '🏥', '🏫', '🏟️', '🚉', '🏰', '⛪',
-  '🏦', '🏪', '🌳', '🏖️', '🗼', '🎡',
-  '🏠', '🏢', '🚇', '✈️', '🚌', '🚏',
-  '🏛️', '🎠', '🏬', '⛲',
+/** 可选站点图标：按场景分组的「多层菜单」，避免一屏挤太多 emoji */
+const ICON_GROUPS: { key: string; label: string; icons: string[] }[] = [
+  {
+    key: 'traffic',
+    label: '🚌 交通',
+    icons: ['🚉', '🚇', '🚌', '🚏', '✈️', '🚕', '🚲', '🛴', '⛴️', '🚠'],
+  },
+  {
+    key: 'building',
+    label: '🏢 建筑',
+    icons: ['🏥', '🏫', '🏟️', '🏰', '⛪', '🏦', '🏪', '🏢', '🏛️', '🏬', '🗼'],
+  },
+  {
+    key: 'nature',
+    label: '🌳 自然',
+    icons: ['🌳', '🏖️', '⛲', '🌋', '🏔️', '🌉', '🎡', '🎠', '🗽', '🏯'],
+  },
+  {
+    key: 'life',
+    label: '🍔 生活',
+    icons: ['🏠', '☕', '🍔', '🛒', '⛽', '🎪', '🚏', '🌇'],
+  },
 ]
+const ALL_ICONS = Array.from(new Set(ICON_GROUPS.flatMap((g) => g.icons)))
 
 /** 底部选中操作栏：站点（改名/删除/出口/图标）与贴纸（缩放/旋转/删除），触屏大按钮 */
 export function SelectionBar() {
@@ -22,6 +39,7 @@ export function SelectionBar() {
   const removeStationFromLine = useWorkStore((s) => s.removeStationFromLine)
   const addStationExit = useWorkStore((s) => s.addStationExit)
   const updateStationExitLabel = useWorkStore((s) => s.updateStationExitLabel)
+  const updateStationExitAngle = useWorkStore((s) => s.updateStationExitAngle)
   const removeStationExit = useWorkStore((s) => s.removeStationExit)
   const setStationIcon = useWorkStore((s) => s.setStationIcon)
   const selectedStationId = useUIStore((s) => s.selectedStationId)
@@ -36,6 +54,8 @@ export function SelectionBar() {
   const freehand = work?.freehands?.find((f) => f.id === selectedFreehandId) ?? null
 
   const [nameDraft, setNameDraft] = useState('')
+  const [showIconPicker, setShowIconPicker] = useState(false)
+  const [iconCat, setIconCat] = useState('all')
   useEffect(() => {
     setNameDraft(station?.name ?? '')
   }, [station?.id, station?.name])
@@ -69,7 +89,8 @@ export function SelectionBar() {
     const isTransferStation = lines.length >= 2
     const exits = station.exits ?? []
     return (
-      <div className="selection-bar scroll-x">
+      <>
+        <div className="selection-bar scroll-x">
         <span className="selection-title">📍 车站</span>
         <input
           className="station-name-input"
@@ -108,53 +129,64 @@ export function SelectionBar() {
           <span className="transfer-hint">提示：在另一线路的「画线」模式下点这个站，即可加换乘</span>
         )}
 
-        {/* 图标选择 */}
-        <div className="sel-section">
+        {/* 图标选择：多层（分类）菜单，避免一屏堆太多 emoji */}
+        <div className="sel-section icon-section">
           <span className="sel-section-label">图标</span>
-          <div className="icon-grid">
-            <button
-              className={`icon-choice ${!station.icon ? 'icon-on' : ''}`}
-              title="默认圆点"
-              onClick={() => setStationIcon(station.id, null)}
-            >
-              <span className="icon-dot-default" />
-            </button>
-            {STATION_ICON_CHOICES.map((em) => (
-              <button
-                key={em}
-                className={`icon-choice ${station.icon === em ? 'icon-on' : ''}`}
-                title="设为该图标"
-                onClick={() => setStationIcon(station.id, em)}
-              >
-                {em}
-              </button>
-            ))}
-          </div>
+          <button
+            className="btn btn-sm icon-pick-btn"
+            onClick={() => setShowIconPicker((v) => !v)}
+            title="选择站点图标"
+          >
+            {station.icon ? `${station.icon} 换图标` : '🏷️ 选图标'}
+          </button>
         </div>
 
-        {/* 出口编辑 */}
+        {/* 出口编辑：可改编号、可调整出口方向（绕站一圈的位置） */}
         <div className="sel-section">
           <span className="sel-section-label">出口</span>
           <div className="exit-row">
             {exits.length === 0 && <span className="exit-empty">暂无出口</span>}
-            {exits.map((ex) => (
-              <span key={ex.id} className="exit-chip">
-                <input
-                  className="exit-label-input"
-                  value={ex.label}
-                  maxLength={4}
-                  onChange={(e) => updateStationExitLabel(station.id, ex.id, e.target.value)}
-                  title="出口编号"
-                />
-                <button
-                  className="exit-remove"
-                  title="删除该出口"
-                  onClick={() => removeStationExit(station.id, ex.id)}
-                >
-                  ✖
-                </button>
-              </span>
-            ))}
+            {exits.map((ex, i) => {
+              const n = exits.length
+              const angle = ex.angle ?? (n === 1 ? 270 : (i * 360) / n)
+              return (
+                <span key={ex.id} className="exit-chip">
+                  <input
+                    className="exit-label-input"
+                    value={ex.label}
+                    maxLength={4}
+                    onChange={(e) => updateStationExitLabel(station.id, ex.id, e.target.value)}
+                    title="出口编号"
+                  />
+                  <input
+                    className="exit-angle"
+                    type="range"
+                    min={0}
+                    max={360}
+                    step={5}
+                    value={angle}
+                    onChange={(e) => updateStationExitAngle(station.id, ex.id, Number(e.target.value))}
+                    title="拖动调整出口方向"
+                  />
+                  <button
+                    className="exit-rotate"
+                    title="旋转 15°"
+                    onClick={() =>
+                      updateStationExitAngle(station.id, ex.id, (angle + 15) % 360)
+                    }
+                  >
+                    ↻
+                  </button>
+                  <button
+                    className="exit-remove"
+                    title="删除该出口"
+                    onClick={() => removeStationExit(station.id, ex.id)}
+                  >
+                    ✖
+                  </button>
+                </span>
+              )
+            })}
             <button
               className="btn btn-sm"
               title="添加一个出口（自动编号 A/B/C…）"
@@ -179,6 +211,52 @@ export function SelectionBar() {
           ✖️
         </button>
       </div>
+      {showIconPicker && (
+        <div className="icon-picker" onClick={(e) => e.stopPropagation()}>
+          <div className="icon-cats">
+            {ICON_GROUPS.map((g) => (
+              <button
+                key={g.key}
+                className={`icon-cat ${iconCat === g.key ? 'on' : ''}`}
+                onClick={() => setIconCat(g.key)}
+              >
+                {g.label}
+              </button>
+            ))}
+            <button
+              className={`icon-cat ${iconCat === 'all' ? 'on' : ''}`}
+              onClick={() => setIconCat('all')}
+            >
+              全部
+            </button>
+          </div>
+          <div className="icon-grid">
+            <button
+              className={`icon-choice ${!station.icon ? 'icon-on' : ''}`}
+              title="默认圆点"
+              onClick={() => {
+                setStationIcon(station.id, null)
+                setShowIconPicker(false)
+              }}
+            >
+              <span className="icon-dot-default" />
+            </button>
+            {(iconCat === 'all' ? ALL_ICONS : ICON_GROUPS.find((g) => g.key === iconCat)!.icons).map(
+              (em) => (
+                <button
+                  key={em}
+                  className={`icon-choice ${station.icon === em ? 'icon-on' : ''}`}
+                  title="设为该图标"
+                  onClick={() => setStationIcon(station.id, em)}
+                >
+                  {em}
+                </button>
+              ),
+            )}
+          </div>
+        </div>
+      )}
+    </>
     )
   }
 

@@ -35,9 +35,10 @@ function stationIcon(
     ? `<div class="st-icon ${transfer ? 'transfer' : ''}"><span class="st-emoji">${escapeHtml(station.icon)}</span></div>`
     : `<div class="st-dot ${transfer ? 'transfer' : ''}"></div>`
   // 出口：环绕站点均匀排布（可指定 angle 微调方向）
+  const exitN = (station.exits ?? []).length
   const exits = (station.exits ?? [])
     .map((ex, i) => {
-      const angle = ex.angle ?? (i * 360) / Math.max(1, station.exits!.length)
+      const angle = ex.angle ?? (exitN === 1 ? 270 : (i * 360) / exitN)
       return `<span class="st-exit" style="--a:${angle}deg">${escapeHtml(ex.label)}</span>`
     })
     .join('')

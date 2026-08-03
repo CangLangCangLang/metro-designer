@@ -2,12 +2,20 @@ import { Fragment } from 'react'
 import { Polyline } from 'react-leaflet'
 import type { Work } from '../model/types'
 import { lineSegments } from '../utils/lineSegments'
+import { useWorkStore } from '../store/workStore'
+import { useUIStore } from '../store/uiStore'
 
 /**
  * 线路层：每条线按「站间区间」分别渲染（白描边 casing + 彩色线芯）。
  * 地下段用虚线 + 暗灰描边 + 降低不透明度，与地上段明显区分。
+ * 在「调整」模式下，每段额外铺一条透明可点的热区：点某段即可单独切换该段的地上/地下，
+ * 实现"站点和下一站点之间"的精确控制，而不是整条线一刀切。
  */
 export function LineLayer({ work }: { work: Work }) {
+  const mode = useUIStore((s) => s.mode)
+  const toggleSegmentGround = useWorkStore((s) => s.toggleSegmentGround)
+  const clickable = mode === 'adjust'
+
   return (
     <>
       {work.lines
@@ -48,6 +56,22 @@ export function LineLayer({ work }: { work: Work }) {
                       }}
                       interactive={false}
                     />
+                    {clickable && (
+                      <Polyline
+                        positions={part.pts}
+                        pathOptions={{
+                          color: '#000',
+                          weight: 24,
+                          opacity: 0.001,
+                          className: 'segment-hit',
+                          interactive: true,
+                        }}
+                        bubblingMouseEvents={false}
+                        eventHandlers={{
+                          click: () => toggleSegmentGround(line.id, part.segIdx),
+                        }}
+                      />
+                    )}
                   </Fragment>
                 )
               })}

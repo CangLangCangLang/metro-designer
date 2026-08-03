@@ -75,7 +75,7 @@ for (const [x, y] of points) {
   await page.waitForTimeout(200)
 }
 await page.waitForTimeout(500)
-const stationCount = await page.locator('.st-dot').count()
+const stationCount = await page.locator('.station-marker').count()
 check(`放出 5 个站点（实际 ${stationCount}）`, stationCount === 5)
 check('首次点击自动创建了 1号线', await page.getByText('1号线').first().isVisible())
 check('线路显示 5 站', await page.getByText('5站').first().isVisible())
@@ -84,10 +84,10 @@ await page.screenshot({ path: `${SHOTS}/3-line-drawn.png` })
 console.log('4. 撤销/重做')
 await page.keyboard.press('Control+z')
 await page.waitForTimeout(300)
-check('撤销后 4 站', (await page.locator('.st-dot').count()) === 4)
+check('撤销后 4 站', (await page.locator('.station-marker').count()) === 4)
 await page.keyboard.press('Control+y')
 await page.waitForTimeout(300)
-check('重做后 5 站', (await page.locator('.st-dot').count()) === 5)
+check('重做后 5 站', (await page.locator('.station-marker').count()) === 5)
 
 console.log('5. 站点改名（选中操作栏）')
 await page.mouse.click(points[2][0], points[2][1])
@@ -116,7 +116,7 @@ for (const [x, y] of cross) {
   await page.waitForTimeout(200)
 }
 await page.waitForTimeout(400)
-const transferCount = await page.locator('.st-dot.transfer').count()
+const transferCount = await page.locator('.st-icon.transfer, .st-dot.transfer').count()
 check(`形成换乘站（换乘站数 ${transferCount}）`, transferCount >= 1)
 await page.screenshot({ path: `${SHOTS}/4-transfer.png` })
 
@@ -144,7 +144,7 @@ console.log('9. 自动保存 → 刷新恢复')
 await page.waitForTimeout(2500) // 等防抖落盘
 await page.reload({ waitUntil: 'load' })
 await page.waitForTimeout(2500)
-check('刷新后站点还在（5+2）', (await page.locator('.st-dot').count()) === 7)
+check('刷新后站点还在（5+2）', (await page.locator('.station-marker').count()) === 7)
 check('刷新后贴纸还在', (await page.locator('.sticker-marker').count()) >= 1)
 
 console.log('10. 导出对话框')

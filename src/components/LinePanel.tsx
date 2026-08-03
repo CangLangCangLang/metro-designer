@@ -33,6 +33,7 @@ function insertLatLng(
 /** 线路站点详情：站名列表 + 站间距 + 区间时速 + 全程时间 + 插入上一站 */
 function StationList({ line, work }: { line: Line; work: Work }) {
   const updateLine = useWorkStore((s) => s.updateLine)
+  const toggleSegmentGround = useWorkStore((s) => s.toggleSegmentGround)
   const insertStation = useWorkStore((s) => s.insertStation)
   const stops = line.stationIds
     .map((id) => work.stations[id])
@@ -54,12 +55,7 @@ function StationList({ line, work }: { line: Line; work: Work }) {
   }
 
   const cycleSegGround = (segIdx: number) => {
-    const current = line.segmentGround?.[segIdx] ?? groundDefault
-    const next = current === 'ground' ? 'under' : 'ground'
-    const segGround = { ...(line.segmentGround ?? {}) }
-    if (next === groundDefault) delete segGround[segIdx]
-    else segGround[segIdx] = next
-    updateLine(line.id, { segmentGround: segGround })
+    toggleSegmentGround(line.id, segIdx)
   }
 
   return (
@@ -348,7 +344,7 @@ export function LinePanel() {
                 ))}
               </div>
 
-              <div className="section-label">默认地面</div>
+              <div className="section-label">默认地面（整条线）</div>
               <div className="seg-group">
                 <button
                   className={`pill-btn ${groundDefault === 'ground' ? 'pill-on' : ''}`}
@@ -364,7 +360,7 @@ export function LinePanel() {
                 </button>
               </div>
               <div className="section-note">
-                展开下方站点，可单独设置「某一段」地上 / 地下
+                下面每段可单独切地上 / 地下；「调整」模式下直接点地图上的某一段也能切换
               </div>
             </div>
 

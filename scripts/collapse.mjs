@@ -64,7 +64,7 @@ await page.mouse.click(cx - 100, cy - 60)
 await page.waitForTimeout(200)
 await page.mouse.click(cx + 100, cy + 60)
 await page.waitForTimeout(300)
-check('收起状态放出 2 个站', (await page.locator('.st-dot').count()) === 2)
+check('收起状态放出 2 个站', (await page.locator('.station-marker').count()) === 2)
 
 console.log('4. 展开恢复')
 await page.locator('.panel-tab-toolbar').click()

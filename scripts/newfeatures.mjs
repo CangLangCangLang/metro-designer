@@ -83,8 +83,45 @@ for (const [x, y] of pts) {
   await page.waitForTimeout(180)
 }
 await page.waitForTimeout(400)
-const drawn = await page.locator('.st-dot').count()
+const drawn = await page.locator('.station-marker').count()
 check(`放出 4 个站点（实际 ${drawn}）`, drawn === 4)
+check('新站默认带图标（不再是清一色圆点）', (await page.locator('.st-dot').count()) === 0 && (await page.locator('.st-icon').count()) === 4)
+
+// 1b. 画笔：起点/终点吸附到站点，避免画出脱离线路的悬空线
+console.log('1b. 画笔起点/终点吸附到站点')
+await page.getByRole('button', { name: /🖌️ 画笔/ }).click()
+await page.waitForTimeout(200)
+// 从站点0 画一条向上拱起的弧线，落到站点2（两端都恰好压在站点上 → 吸附）
+await page.mouse.move(pts[0][0], pts[0][1])
+await page.mouse.down()
+await page.mouse.move(pts[0][0] - 10, pts[0][1] - 120)
+await page.mouse.move((pts[0][0] + pts[2][0]) / 2, (pts[0][1] + pts[2][1]) / 2 - 160)
+await page.mouse.move(pts[2][0] + 10, pts[2][1] - 120)
+await page.mouse.move(pts[2][0], pts[2][1])
+await page.waitForTimeout(40)
+await page.mouse.up()
+await page.waitForTimeout(1200) // 等自动保存落盘
+const fhSnap = await page.evaluate(async () => {
+  const wid = location.hash.match(/#\/editor\/(.+)/)?.[1]
+  const db = await new Promise((res, rej) => { const o = indexedDB.open('metro-designer'); o.onsuccess = () => res(o.result); o.onerror = () => rej(o.error) })
+  const rec = await new Promise((res, rej) => { const t = db.transaction('works', 'readonly'); const r = t.objectStore('works').get('md:work:' + wid); r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error) })
+  const fhs = rec?.freehands ?? []
+  return fhs[fhs.length - 1] ?? null
+})
+check('画笔起点吸附到站点（startStationId 非空）', fhSnap && Boolean(fhSnap.startStationId))
+check('画笔终点吸附到站点（endStationId 非空）', fhSnap && Boolean(fhSnap.endStationId))
+// 选中并删除这条画笔（弧线顶点远离真实线路，避免误触线段）
+await page.getByRole('button', { name: /调整/ }).click()
+await page.waitForTimeout(200)
+await page.mouse.click((pts[0][0] + pts[2][0]) / 2, (pts[0][1] + pts[2][1]) / 2 - 160)
+await page.waitForTimeout(400)
+if (await page.locator('.selection-bar').isVisible().catch(() => false)) {
+  await page.getByRole('button', { name: '🗑️ 删除' }).click()
+  await page.waitForTimeout(300)
+  check('画笔可删除（选中栏消失）', !(await page.locator('.selection-bar').isVisible().catch(() => false)))
+} else {
+  check('画笔可删除（选中栏消失）', false)
+}
 
 // 展开线路面板
 if ((await page.locator('.panel-tab-lines').count()) > 0)
@@ -107,31 +144,42 @@ await page.waitForSelector('.insert-before-btn', { timeout: 3000 })
 // 首站前插入
 await page.locator('.insert-before-btn').first().click()
 await page.waitForTimeout(300)
-const afterBefore = await page.locator('.st-dot').count()
+const afterBefore = await page.locator('.station-marker').count()
 check(`插入上一站后 5 站（实际 ${afterBefore}）`, afterBefore === 5)
 // 末尾插入
 await page.locator('.insert-before-btn.insert-at-end').click()
 await page.waitForTimeout(300)
-const afterEnd = await page.locator('.st-dot').count()
+const afterEnd = await page.locator('.station-marker').count()
 check(`插入下一站后 6 站（实际 ${afterEnd}）`, afterEnd === 6)
 await page.screenshot({ path: `${SHOTS}/nf-2-insert.png` })
 
-console.log('7. 自定义站点图标（emoji）')
+console.log('7. 自定义站点图标（多层菜单 + 默认圆点可还原）')
 // 切到「调整」模式，点选第 2 个原始站（pts[0]）以稳定选择
 await page.getByRole('button', { name: /调整/ }).click()
 await page.waitForTimeout(150)
 await page.mouse.click(pts[0][0], pts[0][1])
 await page.waitForSelector('.selection-bar', { timeout: 3000 })
-await page.waitForSelector('.icon-grid', { timeout: 3000 })
-await page.locator('.icon-choice', { hasText: '🏥' }).click()
+await page.waitForSelector('.icon-pick-btn', { timeout: 3000 })
+// 打开图标菜单，选 🏥
+await page.locator('.icon-pick-btn').click()
+await page.waitForSelector('.icon-picker')
+await page.locator('.icon-picker .icon-choice', { hasText: '🏥' }).click()
 await page.waitForTimeout(400)
-const iconCount = await page.locator('.st-icon').count()
-const dotCount = await page.locator('.st-dot').count()
-check(`设置图标后出现 1 个 .st-icon（实际 ${iconCount}）`, iconCount === 1)
-check(`圆点减为 5 个（实际 ${dotCount}）`, dotCount === 5)
-const emojiTxt = await page.locator('.st-icon').first().innerText()
-check('图标渲染出 🏥', emojiTxt.includes('🏥'))
+check('图标渲染出 🏥', (await page.locator('.st-wrap.selected .st-emoji').innerText()).includes('🏥'))
+// 还原为默认圆点（验证可清除自定义图标，此选项会关闭菜单）
+await page.locator('.icon-picker .icon-choice:has(.icon-dot-default)').click()
+await page.waitForTimeout(300)
+check('可还原为默认圆点', (await page.locator('.st-wrap.selected .st-dot').count()) === 1)
+// 再设回图标（保持全部站点有图标，便于后续断言）
+await page.locator('.icon-pick-btn').click()
+await page.waitForSelector('.icon-picker')
+await page.locator('.icon-picker .icon-choice', { hasText: '🏥' }).click()
+await page.waitForTimeout(200)
 await page.screenshot({ path: `${SHOTS}/nf-3-icon.png` })
+// 关闭图标菜单：它浮在选中栏上方，会遮挡后续出口编辑按钮（旋转/删除）
+await page.locator('.icon-pick-btn').click()
+await page.waitForTimeout(300)
+check('图标菜单可关闭（不再遮挡出口编辑）', !(await page.locator('.icon-picker').isVisible().catch(() => false)))
 
 console.log('6. 出口与出口编号')
 await page.getByRole('button', { name: /＋ 出口/ }).click()
@@ -152,6 +200,20 @@ await page.waitForTimeout(300)
 const mapExits = await page.locator('.st-exit').count()
 check(`地图上渲染 2 个出口标记（实际 ${mapExits}）`, mapExits === 2)
 await page.screenshot({ path: `${SHOTS}/nf-4-exits.png` })
+
+console.log('6b. 出口方向可调')
+await page.locator('.exit-rotate').first().click()
+await page.waitForTimeout(300)
+await page.waitForTimeout(1200) // 等自动保存落盘
+const exitAngle = await page.evaluate(async () => {
+  const wid = location.hash.match(/#\/editor\/(.+)/)?.[1]
+  const db = await new Promise((res, rej) => { const o = indexedDB.open('metro-designer'); o.onsuccess = () => res(o.result); o.onerror = () => rej(o.error) })
+  const rec = await new Promise((res, rej) => { const t = db.transaction('works', 'readonly'); const r = t.objectStore('works').get('md:work:' + wid); r.onsuccess = () => res(r.result); r.onerror = () => rej(o.error) })
+  const st = Object.values(rec?.stations ?? {}).find((s) => (s.exits ?? []).length >= 2)
+  return st?.exits?.[0]?.angle ?? null
+})
+check(`出口方向可调整（实际角度 ${exitAngle}）`, exitAngle === 15)
+
 // 收起选中栏，避免影响后续点击
 await page.locator('.selection-bar .btn', { hasText: '✖️' }).last().click()
 await page.waitForTimeout(200)
@@ -186,6 +248,31 @@ check('移出一条线后不再是换乘站', badgeAfter === 0)
 const chipAfter = await page.locator('.transfer-line-chip').count()
 check('移出后不再显示线路 chip', chipAfter === 0)
 
+console.log('5b. 站间地上/地下：点地图段单独切换')
+const segBefore = await page.evaluate(async () => {
+  const wid = location.hash.match(/#\/editor\/(.+)/)?.[1]
+  const db = await new Promise((res, rej) => { const o = indexedDB.open('metro-designer'); o.onsuccess = () => res(o.result); o.onerror = () => rej(o.error) })
+  const rec = await new Promise((res, rej) => { const t = db.transaction('works', 'readonly'); const r = t.objectStore('works').get('md:work:' + wid); r.onsuccess = () => res(r.result); r.onerror = () => rej(o.error) })
+  const line = (rec?.lines ?? []).find((l) => l.name === '1号线')
+  return line?.segmentGround ?? {}
+})
+// 在「调整」模式点两个站之间的线段中点 → 仅该段切换为地下（不是整条线一刀切）
+await page.getByRole('button', { name: /调整/ }).click()
+await page.waitForTimeout(200)
+await page.mouse.click((pts[0][0] + pts[1][0]) / 2, (pts[0][1] + pts[1][1]) / 2)
+await page.waitForTimeout(300)
+await page.waitForTimeout(1200)
+const segAfter = await page.evaluate(async () => {
+  const wid = location.hash.match(/#\/editor\/(.+)/)?.[1]
+  const db = await new Promise((res, rej) => { const o = indexedDB.open('metro-designer'); o.onsuccess = () => res(o.result); o.onerror = () => rej(o.error) })
+  const rec = await new Promise((res, rej) => { const t = db.transaction('works', 'readonly'); const r = t.objectStore('works').get('md:work:' + wid); r.onsuccess = () => res(r.result); r.onerror = () => rej(o.error) })
+  const line = (rec?.lines ?? []).find((l) => l.name === '1号线')
+  return line?.segmentGround ?? {}
+})
+const segKeys = Object.keys(segAfter)
+check('点地图段后恰好多出 1 个分段设置（非整条线）', segKeys.length === Object.keys(segBefore).length + 1)
+check('被点击的段切为地下', segKeys.length > 0 && segAfter[segKeys[0]] === 'under')
+
 console.log('2a. 自动保存状态 + 刷新不丢')
 await page.waitForTimeout(1600) // 等 1s 防抖落盘
 const saveTxt = await page.locator('.save-status').innerText()
@@ -196,7 +283,7 @@ await page.waitForTimeout(2500)
 const afterReload = await page.locator('.station-marker').count()
 check(`刷新后站点仍在（实际 ${afterReload}，期望 7）`, afterReload === 7)
 const iconAfter = await page.locator('.st-icon').count()
-check(`刷新后图标仍在（实际 ${iconAfter}）`, iconAfter === 1)
+check(`刷新后图标仍在（实际 ${iconAfter}，期望 7）`, iconAfter === 7)
 const exitAfter = await page.locator('.st-exit').count()
 check(`刷新后出口仍在（实际 ${exitAfter}）`, exitAfter === 2)
 await page.screenshot({ path: `${SHOTS}/nf-6-persist.png` })

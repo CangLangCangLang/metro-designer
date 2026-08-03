@@ -54,7 +54,7 @@ for (const [x, y] of pts) {
   await page.waitForTimeout(150)
 }
 await page.waitForTimeout(400)
-check('放出 4 个站', (await page.locator('.st-dot').count()) === 4)
+check('放出 4 个站', (await page.locator('.station-marker').count()) === 4)
 
 console.log('2. 直线 → 曲线')
 const pathBefore = await page.locator('.leaflet-overlay-pane svg path').first().getAttribute('d')

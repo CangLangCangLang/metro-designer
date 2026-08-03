@@ -63,6 +63,10 @@ export interface FreehandStroke {
   points: { lat: number; lng: number }[]
   /** 线宽档：1 细 / 2 中 / 3 粗 */
   width: 1 | 2 | 3
+  /** 起点吸附到的站点 id（画笔从该站起笔，自动连入线路） */
+  startStationId?: string | null
+  /** 终点吸附到的站点 id（画笔在该站收笔，自动连入线路） */
+  endStationId?: string | null
 }
 
 export interface Sticker {

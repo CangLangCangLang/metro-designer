@@ -56,7 +56,7 @@ for (const [x, y] of taps) {
   await page.touchscreen.tap(x, y)
   await page.waitForTimeout(300)
 }
-check('触屏放出 3 个站', (await page.locator('.st-dot').count()) === 3)
+check('触屏放出 3 个站', (await page.locator('.station-marker').count()) === 3)
 await page.screenshot({ path: `${SHOTS}/t1-touch-draw.png` })
 
 console.log('3. 触屏选中站点改名')

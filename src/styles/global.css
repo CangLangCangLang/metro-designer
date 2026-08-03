@@ -790,6 +790,94 @@ select {
   color: #fff;
 }
 
+/* 出口方向微调 */
+.exit-angle {
+  width: 86px;
+  accent-color: var(--primary);
+  cursor: pointer;
+  flex: none;
+}
+
+.exit-rotate {
+  border: none;
+  background: rgba(79, 124, 255, 0.12);
+  border-radius: 8px;
+  width: 28px;
+  height: 30px;
+  font-size: 15px;
+  line-height: 1;
+  color: var(--text);
+  flex: none;
+}
+
+.exit-rotate:hover {
+  background: rgba(79, 124, 255, 0.24);
+}
+
+/* 选中栏：图标多层（分类）菜单 —— 弹出层避免一屏堆太多 emoji */
+.icon-pick-btn {
+  white-space: nowrap;
+}
+
+.icon-picker {
+  position: fixed;
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: 132px;
+  z-index: 960;
+  width: min(420px, calc(100vw - 24px));
+  background: #fff;
+  border-radius: 16px;
+  box-shadow: 0 8px 28px rgba(60, 80, 180, 0.28);
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  animation: hint-pop 0.18s ease;
+}
+
+.icon-cats {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.icon-cat {
+  border: none;
+  border-radius: 999px;
+  padding: 6px 12px;
+  background: rgba(79, 124, 255, 0.1);
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-light);
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.icon-cat.on {
+  background: var(--primary);
+  color: #fff;
+}
+
+.icon-picker .icon-grid {
+  display: grid;
+  grid-template-columns: repeat(8, 1fr);
+  gap: 6px;
+  max-height: 224px;
+  overflow-y: auto;
+}
+
+.icon-picker .icon-choice {
+  width: 100%;
+  height: 38px;
+  font-size: 20px;
+}
+
+/* 调整模式下，可点击切换地上/地下的线段热区 */
+.segment-hit {
+  cursor: pointer;
+}
+
 /* 在站点列表中插入上一站 / 下一站 */
 .insert-before-btn {
   display: block;

@@ -115,6 +115,8 @@ interface WorkStore {
   updateStationExitLabel(stationId: string, exitId: string, label: string): void
   /** 删除站点某个出口 */
   removeStationExit(stationId: string, exitId: string): void
+  /** 调整某个出口的方向角（度，0=正右/东，顺时针）；用于手动摆出口位置 */
+  updateStationExitAngle(stationId: string, exitId: string, angle: number): void
   /** 设置/清除站点自定义图标（emoji；传 null 还原为默认圆点） */
   setStationIcon(stationId: string, icon: string | null): void
 
@@ -124,8 +126,18 @@ interface WorkStore {
   deleteSticker(id: string): void
 
   // ---- 自由画笔 ----
-  addFreehand(color: string, points: { lat: number; lng: number }[], width?: 1 | 2 | 3): string
+  addFreehand(
+    color: string,
+    points: { lat: number; lng: number }[],
+    width?: 1 | 2 | 3,
+    startStationId?: string | null,
+    endStationId?: string | null,
+  ): string
   deleteFreehand(id: string): void
+
+  // ---- 地上/地下 ----
+  /** 切换某「站间区间」的地上/地下（segIdx 即 stationIds[i]→stationIds[i+1]） */
+  toggleSegmentGround(lineId: string, segIdx: number): void
 
   // ---- 其他 ----
   setView(view: Work['view']): void
@@ -402,6 +414,24 @@ export const useWorkStore = create<WorkStore>((set, get) => ({
     })
   },
 
+  updateStationExitAngle(stationId, exitId, angle) {
+    get().mutate((w) => {
+      const st = w.stations[stationId]
+      if (!st?.exits) return w
+      const a = ((Math.round(angle) % 360) + 360) % 360
+      return {
+        ...w,
+        stations: {
+          ...w.stations,
+          [stationId]: {
+            ...st,
+            exits: st.exits.map((e) => (e.id === exitId ? { ...e, angle: a } : e)),
+          },
+        },
+      }
+    })
+  },
+
   setStationIcon(stationId, icon) {
     get().mutate((w) => {
       const st = w.stations[stationId]
@@ -437,10 +467,26 @@ export const useWorkStore = create<WorkStore>((set, get) => ({
 
   // ---- 自由画笔 ----
 
-  addFreehand(color, points, width = 2) {
-    const stroke = createFreehand(color, points, width)
+  addFreehand(color, points, width = 2, startStationId = null, endStationId = null) {
+    const stroke = createFreehand(color, points, width, startStationId, endStationId)
     get().mutate((w) => ({ ...w, freehands: [...(w.freehands ?? []), stroke] }))
     return stroke.id
+  },
+
+  toggleSegmentGround(lineId, segIdx) {
+    get().mutate((w) => {
+      const lines = w.lines.map((l) => {
+        if (l.id !== lineId) return l
+        const groundDefault = l.defaultGround ?? 'ground'
+        const current = l.segmentGround?.[segIdx] ?? groundDefault
+        const next = current === 'ground' ? 'under' : 'ground'
+        const segGround = { ...(l.segmentGround ?? {}) }
+        if (next === groundDefault) delete segGround[segIdx]
+        else segGround[segIdx] = next
+        return { ...l, segmentGround: segGround }
+      })
+      return { ...w, lines }
+    })
   },
 
   deleteFreehand(id) {
