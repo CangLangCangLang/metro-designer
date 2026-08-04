@@ -39,7 +39,8 @@ function stationIcon(
   const exits = (station.exits ?? [])
     .map((ex, i) => {
       const angle = ex.angle ?? (exitN === 1 ? 270 : (i * 360) / exitN)
-      return `<span class="st-exit" style="--a:${angle}deg">${escapeHtml(ex.label)}</span>`
+      const dist = ex.dist ?? 1
+      return `<span class="st-exit" style="--a:${angle}deg;--d:${dist}">${escapeHtml(ex.label)}</span>`
     })
     .join('')
   return L.divIcon({

@@ -5,6 +5,8 @@ export interface StationExit {
   label: string
   /** 出口方向角（度，0=正右/东，顺时针）。不填则按序号均匀环绕 */
   angle?: number
+  /** 出口离站距离倍数（1=默认，<1 更近，>1 更远）。不填等同 1 */
+  dist?: number
 }
 
 /** 站点：唯一地理实体，可被多条线路引用（换乘站的关键设计） */

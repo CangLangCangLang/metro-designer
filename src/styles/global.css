@@ -798,6 +798,14 @@ select {
   flex: none;
 }
 
+/* 出口离站距离（远近）微调 */
+.exit-dist {
+  width: 86px;
+  accent-color: var(--primary);
+  cursor: pointer;
+  flex: none;
+}
+
 .exit-rotate {
   border: none;
   background: rgba(79, 124, 255, 0.12);
@@ -1215,12 +1223,14 @@ select {
   align-items: center;
   justify-content: center;
   padding: 16px;
+  overflow-y: auto;
 }
 
 .dialog {
   width: min(480px, 100%);
   max-height: calc(100vh - 60px);
   overflow-y: auto;
+  margin: auto;
   background: var(--card);
   border-radius: 22px;
   box-shadow: var(--shadow);
@@ -1266,6 +1276,24 @@ select {
   flex-wrap: wrap;
   gap: 10px 18px;
   margin-bottom: 16px;
+}
+
+.export-section {
+  margin-bottom: 14px;
+}
+
+.export-section-label {
+  font-size: 14px;
+  font-weight: 800;
+  color: var(--text-light);
+  margin-bottom: 6px;
+}
+
+.export-hint {
+  font-size: 12px;
+  color: var(--text-light);
+  margin-top: 6px;
+  line-height: 1.4;
 }
 
 .export-check {
@@ -1607,8 +1635,8 @@ select {
   align-items: center;
   justify-content: center;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
-  /* 先按角度旋转到方向，再外移半径；最后反向旋转保持字母正立 */
-  transform: translate(-50%, -50%) rotate(var(--a)) translate(30px) rotate(calc(-1 * var(--a)));
+  /* 先按角度旋转到方向，再外移半径（半径随 --d 远近变化）；最后反向旋转保持字母正立 */
+  transform: translate(-50%, -50%) rotate(var(--a)) translate(calc(34px * var(--d, 1))) rotate(calc(-1 * var(--a)));
 }
 
 .st-wrap.selected .st-dot,

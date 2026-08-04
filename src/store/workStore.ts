@@ -117,6 +117,8 @@ interface WorkStore {
   removeStationExit(stationId: string, exitId: string): void
   /** 调整某个出口的方向角（度，0=正右/东，顺时针）；用于手动摆出口位置 */
   updateStationExitAngle(stationId: string, exitId: string, angle: number): void
+  /** 调整某个出口离站点的距离倍数（0.5~2，1=默认）；让各出口离站远近不一 */
+  updateStationExitDist(stationId: string, exitId: string, dist: number): void
   /** 设置/清除站点自定义图标（emoji；传 null 还原为默认圆点） */
   setStationIcon(stationId: string, icon: string | null): void
 
@@ -373,7 +375,7 @@ export const useWorkStore = create<WorkStore>((set, get) => ({
           break
         }
       }
-      const exit: StationExit = { id: newId(), label }
+      const exit: StationExit = { id: newId(), label, dist: 1 }
       createdId = exit.id
       return {
         ...w,
@@ -432,6 +434,23 @@ export const useWorkStore = create<WorkStore>((set, get) => ({
     })
   },
 
+  updateStationExitDist(stationId, exitId, dist) {
+    get().mutate((w) => {
+      const st = w.stations[stationId]
+      if (!st?.exits) return w
+      const d = Math.max(0.5, Math.min(2, Math.round(dist * 10) / 10))
+      return {
+        ...w,
+        stations: {
+          ...w.stations,
+          [stationId]: {
+            ...st,
+            exits: st.exits.map((e) => (e.id === exitId ? { ...e, dist: d } : e)),
+          },
+        },
+      }
+    })
+  },
   setStationIcon(stationId, icon) {
     get().mutate((w) => {
       const st = w.stations[stationId]

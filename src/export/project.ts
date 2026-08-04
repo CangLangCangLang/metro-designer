@@ -23,6 +23,11 @@ export interface FitTransform {
   height: number
   /** 1 mercator 米对应的画布单位 */
   scale: number
+  /** 内部 bbox 与偏移（供逆向投影用） */
+  minX: number
+  minY: number
+  offX: number
+  offY: number
 }
 
 /**
@@ -35,7 +40,16 @@ export function fitToCanvas(
   padding: number,
 ): FitTransform {
   if (pts.length === 0) {
-    return { toCanvas: () => ({ x: width / 2, y: height / 2 }), width, height, scale: 1 }
+    return {
+      toCanvas: () => ({ x: width / 2, y: height / 2 }),
+      width,
+      height,
+      scale: 1,
+      minX: 0,
+      minY: 0,
+      offX: 0,
+      offY: 0,
+    }
   }
   let minX = Infinity
   let minY = Infinity
@@ -61,6 +75,10 @@ export function fitToCanvas(
     width,
     height,
     scale,
+    minX,
+    minY,
+    offX,
+    offY,
     toCanvas(p: Pt): Pt {
       return {
         x: offX + (p.x - minX) * scale,
@@ -69,4 +87,20 @@ export function fitToCanvas(
       }
     },
   }
+}
+
+/**
+ * 画布像素坐标 → 经纬度（fit.toCanvas 的逆运算），用于反算底图瓦片范围。
+ */
+export function canvasToLatLng(
+  fit: FitTransform,
+  cx: number,
+  cy: number,
+): { lat: number; lng: number } {
+  const R = 6378137
+  const mx = fit.minX + (cx - fit.offX) / fit.scale
+  const mercY = fit.minY + (fit.height - cy - fit.offY) / fit.scale
+  const lng = (mx * 180) / (R * Math.PI)
+  const lat = (2 * Math.atan(Math.exp(mercY / R)) - Math.PI / 2) * (180 / Math.PI)
+  return { lat, lng }
 }

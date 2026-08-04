@@ -40,6 +40,7 @@ export function SelectionBar() {
   const addStationExit = useWorkStore((s) => s.addStationExit)
   const updateStationExitLabel = useWorkStore((s) => s.updateStationExitLabel)
   const updateStationExitAngle = useWorkStore((s) => s.updateStationExitAngle)
+  const updateStationExitDist = useWorkStore((s) => s.updateStationExitDist)
   const removeStationExit = useWorkStore((s) => s.removeStationExit)
   const setStationIcon = useWorkStore((s) => s.setStationIcon)
   const selectedStationId = useUIStore((s) => s.selectedStationId)
@@ -149,6 +150,7 @@ export function SelectionBar() {
             {exits.map((ex, i) => {
               const n = exits.length
               const angle = ex.angle ?? (n === 1 ? 270 : (i * 360) / n)
+              const dist = ex.dist ?? 1
               return (
                 <span key={ex.id} className="exit-chip">
                   <input
@@ -167,6 +169,16 @@ export function SelectionBar() {
                     value={angle}
                     onChange={(e) => updateStationExitAngle(station.id, ex.id, Number(e.target.value))}
                     title="拖动调整出口方向"
+                  />
+                  <input
+                    className="exit-dist"
+                    type="range"
+                    min={0.5}
+                    max={2}
+                    step={0.1}
+                    value={dist}
+                    onChange={(e) => updateStationExitDist(station.id, ex.id, Number(e.target.value))}
+                    title="拖动调整出口离站的远近"
                   />
                   <button
                     className="exit-rotate"

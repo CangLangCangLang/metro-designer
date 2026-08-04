@@ -1,15 +1,19 @@
 import type { Work } from '../model/types'
 import { isTransfer, stationColor } from '../model/transfer'
-import { fitToCanvas, projectMerc, type Pt } from './project'
+import { fitToCanvas, projectMerc, type Pt, type FitTransform } from './project'
 import { smoothPathD, straightPathD } from '../utils/smooth'
 import { formatDistance, lineLengthMeters } from '../utils/geo'
 import { lineSegments } from '../utils/lineSegments'
 
 export interface ExportOptions {
-  background: 'white' | 'transparent'
+  background: 'white' | 'transparent' | 'map'
   showLegend: boolean
   showStickers: boolean
   showTitle: boolean
+  /** 导出范围：仅导出指定线路（按地铁导出）；不传则导出全部可见线路 */
+  scope?: { lineIds?: string[] }
+  /** 标题覆盖（按地铁导出时填线路名） */
+  titleOverride?: string
 }
 
 export const DEFAULT_EXPORT_OPTIONS: ExportOptions = {
@@ -132,11 +136,22 @@ const ANCHORS_LEFT_FIRST = flipAnchors(ANCHORS_RIGHT_FIRST)
 export function exportWorkToSVG(
   work: Work,
   opts: Partial<ExportOptions> = {},
-): { svg: string; width: number; height: number } {
+): { svg: string; width: number; height: number; fit: FitTransform } {
   const options: ExportOptions = { ...DEFAULT_EXPORT_OPTIONS, ...opts }
+  // 地图底图由调用方叠加，SVG 内部按透明处理
+  const bg = options.background === 'map' ? 'transparent' : options.background
 
-  // 1. 投影全部点（站点 + 贴纸），决定画布横竖版
-  const stations = Object.values(work.stations)
+  // 1. 投影全部点（按范围筛选后的站点 + 贴纸），决定画布横竖版
+  const scopeLineIds = options.scope?.lineIds
+  const visibleLines = work.lines.filter(
+    (l) =>
+      (!scopeLineIds || scopeLineIds.includes(l.id)) &&
+      l.visible &&
+      l.stationIds.length >= 2,
+  )
+  const renderStationIds = new Set<string>()
+  for (const l of visibleLines) for (const id of l.stationIds) renderStationIds.add(id)
+  const stations = [...renderStationIds].map((id) => work.stations[id]).filter(Boolean)
   const projected = new Map<string, Pt>()
   const allPts: Pt[] = []
   for (const st of stations) {
@@ -168,7 +183,7 @@ export function exportWorkToSVG(
   parts.push(
     `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" font-family='${FONT_STACK}'>`,
   )
-  if (options.background === 'white') {
+  if (bg === 'white') {
     parts.push(`<rect width="${W}" height="${H}" fill="#ffffff"/>`)
   }
 
@@ -196,7 +211,6 @@ export function exportWorkToSVG(
   }
 
   // 3. 线路（casing + 芯），同时收集线段供站名避让（带端点站 id）
-  const visibleLines = work.lines.filter((l) => l.visible && l.stationIds.length >= 2)
   const segments: { x1: number; y1: number; x2: number; y2: number; a: string; b: string }[] = []
   for (const line of visibleLines) {
     const pts = line.stationIds
@@ -242,11 +256,11 @@ export function exportWorkToSVG(
     const color = stationColor(work, st.id)
     const r = transfer ? TRANSFER_R : STATION_R
 
-    // 出口：环绕站点均匀排布（与编辑器一致，角度顺时针由 +x 起算）
+    // 出口：环绕站点排布（与编辑器一致，角度顺时针由 +x 起算，距离随 dist 远近变化）
     const exits = st.exits ?? []
     if (exits.length) {
-      const er = r + 14
       exits.forEach((ex, i) => {
+        const er = r + 14 + ((ex.dist ?? 1) - 1) * 20
         const ang = ((ex.angle ?? (i * 360) / exits.length) * Math.PI) / 180
         const ex2 = c.x + er * Math.cos(ang)
         const ey2 = c.y + er * Math.sin(ang)
@@ -284,11 +298,11 @@ export function exportWorkToSVG(
   }
   let legendRect: Rect | null = null
   let legendRows: { color: string; text: string }[] = []
-  if (options.showLegend && work.lines.length > 0) {
+  if (options.showLegend && visibleLines.length > 0) {
     const lineHeight = 44
     const padX = 22
     const padY = 16
-    legendRows = work.lines.map((l) => ({
+    legendRows = visibleLines.map((l) => ({
       color: l.color,
       text: `${l.name}（${l.stationIds.length}站 · ${formatDistance(lineLengthMeters(l, work.stations))}）`,
     }))
@@ -372,16 +386,17 @@ export function exportWorkToSVG(
 
   // 7. 标题（左上角）
   if (options.showTitle) {
+    const titleText = options.titleOverride ?? work.name
     const date = new Date(work.updatedAt)
     const dateStr = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
     parts.push(
-      `<text x="36" y="72" font-size="${TITLE_FONT}" font-weight="bold" fill="#222222" paint-order="stroke" stroke="#ffffff" stroke-width="8">${esc(work.name)}</text>`,
+      `<text x="36" y="72" font-size="${TITLE_FONT}" font-weight="bold" fill="#222222" paint-order="stroke" stroke="#ffffff" stroke-width="8">${esc(titleText)}</text>`,
       `<text x="38" y="112" font-size="24" fill="#888888">${dateStr} · 我的地铁设计师</text>`,
     )
   }
 
   parts.push('</svg>')
-  return { svg: parts.join(''), width: W, height: H }
+  return { svg: parts.join(''), width: W, height: H, fit }
 }
 
 function labelText(x: number, y: number, text: string, anchor: string): string {
