@@ -386,7 +386,7 @@ if (id) {
     ).length
     return { ok: true, schemaVersion: rec.schemaVersion, badExits: bad }
   }, id)
-  check('迁移后 schemaVersion === 2', migrated.schemaVersion === 2)
+  check('迁移后 schemaVersion === 3', migrated.schemaVersion === 3)
   check(`迁移后每个站点都有 exits 数组（异常 ${migrated.badExits ?? '?'}，期望 0）`, migrated.badExits === 0)
   await page.screenshot({ path: `${SHOTS}/nf-8-migrate.png` })
 }

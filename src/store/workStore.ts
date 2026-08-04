@@ -81,13 +81,21 @@ interface WorkStore {
   toggleLineVisible(lineId: string): void
   deleteLine(lineId: string): void
   setTrain(lineId: string, patch: Partial<Line['train']>): void
-  /** 通用线路属性更新（线样式/路径模式/线路时速/区间时速/地上地下等） */
+  /** 通用线路属性更新（线样式/路径模式/线路时速/区间时速/地上地下/运营时刻等） */
   updateLine(
     lineId: string,
     patch: Partial<
       Pick<
         Line,
-        'style' | 'pathMode' | 'speedKmh' | 'segmentSpeeds' | 'defaultGround' | 'segmentGround'
+        | 'style'
+        | 'pathMode'
+        | 'speedKmh'
+        | 'segmentSpeeds'
+        | 'defaultGround'
+        | 'segmentGround'
+        | 'dwellSeconds'
+        | 'firstTrain'
+        | 'lastTrain'
       >
     >,
   ): void

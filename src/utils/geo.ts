@@ -83,6 +83,8 @@ interface LineLike {
   pathMode?: 'straight' | 'smooth'
   speedKmh?: number
   segmentSpeeds?: Record<number, number>
+  /** 每站停站时长（秒），缺省 30 */
+  dwellSeconds?: number
 }
 
 /** 每个站间区间的里程（米），曲线模式按平滑弧长 */
@@ -135,4 +137,110 @@ export function formatDuration(minutes: number): string {
   const h = Math.floor(m / 60)
   const rest = m % 60
   return rest === 0 ? `约 ${h} 小时` : `约 ${h} 小时 ${rest} 分钟`
+}
+
+/* ==================== 运行时长 / 时刻表 ==================== */
+
+/** 默认每站停站时长（秒），真实地铁常见 30 秒左右 */
+export const DEFAULT_DWELL_SEC = 30
+/** 停站时长可选档位（秒） */
+export const DWELL_OPTIONS = [0, 20, 30, 45, 60]
+/** 默认首班车 / 末班车（未设置的线路按此展示） */
+export const DEFAULT_FIRST_TRAIN = '06:00'
+export const DEFAULT_LAST_TRAIN = '22:30'
+
+/** 每站停站时长（秒），缺省 30 */
+export function dwellSeconds(line: LineLike): number {
+  const v = line.dwellSeconds
+  return typeof v === 'number' && v >= 0 ? v : DEFAULT_DWELL_SEC
+}
+
+/**
+ * 每个站间区间的纯运行时长（分钟，不含停站）。
+ * 第 i 项 = stationIds[i] → stationIds[i+1] 的行车时间。
+ */
+export function segmentMinutes(
+  line: LineLike,
+  stations: Record<string, { lat: number; lng: number }>,
+): number[] {
+  const lens = segmentLengthsMeters(line, stations)
+  return lens.map((m, i) => (m / 1000 / segmentSpeedKmh(line, i)) * 60)
+}
+
+/**
+ * 全程时长（分钟，含中间站停站时间）。
+ * 起点不计停站、终点不计停站，中间每站各停 dwellSeconds。
+ */
+export function tripMinutesWithDwell(
+  line: LineLike,
+  stations: Record<string, { lat: number; lng: number }>,
+): number {
+  const run = tripMinutes(line, stations)
+  const segs = segmentLengthsMeters(line, stations).length
+  const midStops = Math.max(segs - 1, 0)
+  return run + (midStops * dwellSeconds(line)) / 60
+}
+
+/**
+ * 列车从起点发车后，到达每一站的累计分钟偏移（第 0 站为 0）。
+ * 计入中间站的停站时间，用于推算各站到站时刻。
+ */
+export function stationOffsetsMinutes(
+  line: LineLike,
+  stations: Record<string, { lat: number; lng: number }>,
+): number[] {
+  const segMin = segmentMinutes(line, stations)
+  const dwellMin = dwellSeconds(line) / 60
+  const out: number[] = [0]
+  let acc = 0
+  for (let i = 0; i < segMin.length; i++) {
+    // 第 i 段之前若已经过中间站，先加上那一站的停站时间
+    if (i > 0) acc += dwellMin
+    acc += segMin[i]
+    out.push(acc)
+  }
+  return out
+}
+
+/** 解析 "HH:MM" → 当天分钟数；非法返回 null */
+export function parseHHMM(s: string | undefined | null): number | null {
+  if (!s) return null
+  const m = /^(\d{1,2}):(\d{2})$/.exec(s.trim())
+  if (!m) return null
+  const h = parseInt(m[1], 10)
+  const mi = parseInt(m[2], 10)
+  if (h < 0 || h > 23 || mi < 0 || mi > 59) return null
+  return h * 60 + mi
+}
+
+/** 分钟数 → "HH:MM"（超过 24 小时自动回绕到次日） */
+export function formatHHMM(minutes: number): string {
+  const t = ((Math.round(minutes) % 1440) + 1440) % 1440
+  const h = Math.floor(t / 60)
+  const mi = t % 60
+  return `${String(h).padStart(2, '0')}:${String(mi).padStart(2, '0')}`
+}
+
+/** 短时长格式化（区间用）：45秒 / 1分30秒 / 12分钟 */
+export function formatShortDuration(minutes: number): string {
+  const totalSec = Math.round(minutes * 60)
+  if (totalSec < 60) return `${totalSec}秒`
+  const m = Math.floor(totalSec / 60)
+  const s = totalSec % 60
+  if (m >= 10 || s === 0) return `${m}分钟`
+  return `${m}分${s}秒`
+}
+
+/**
+ * 运营时长（分钟）：首班车 → 末班车发车的跨度。
+ * 末班车早于首班车时视为跨零点（如 05:30 → 00:30）。
+ */
+export function operatingMinutes(
+  first: string | undefined,
+  last: string | undefined,
+): number | null {
+  const a = parseHHMM(first)
+  const b = parseHHMM(last)
+  if (a === null || b === null) return null
+  return b >= a ? b - a : b + 1440 - a
 }

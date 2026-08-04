@@ -1,5 +1,6 @@
 import type { FreehandStroke, Line, Station, Sticker, Work } from './types'
 import { newId } from '../utils/id'
+import { DEFAULT_DWELL_SEC, DEFAULT_FIRST_TRAIN, DEFAULT_LAST_TRAIN } from '../utils/geo'
 
 /** 儿童友好线路调色板（参照真实地铁常用色 + 高区分度补充色，共 24 种） */
 export const LINE_COLORS = [
@@ -69,6 +70,9 @@ export function createLine(name: string, color: string): Line {
     pathMode: 'straight',
     speedKmh: 80,
     defaultGround: 'ground',
+    dwellSeconds: DEFAULT_DWELL_SEC,
+    firstTrain: DEFAULT_FIRST_TRAIN,
+    lastTrain: DEFAULT_LAST_TRAIN,
   }
 }
 
@@ -125,7 +129,7 @@ export function createWork(
 
 /** 旧版本作品数据补默认值（加载/导入时调用，原地修改并返回）。
  *  通过 schemaVersion 做前向迁移，保证老作品在新版本里不丢不乱。 */
-export const CURRENT_SCHEMA_VERSION = 2
+export const CURRENT_SCHEMA_VERSION = 3
 
 export function normalizeWork(work: Work): Work {
   const from = work.schemaVersion ?? 1
@@ -134,6 +138,10 @@ export function normalizeWork(work: Work): Work {
     line.pathMode ??= 'straight'
     line.speedKmh ??= 80
     line.defaultGround ??= 'ground'
+    // v3：运营时刻（停站时长 / 首末班车）。仅补默认值，不覆盖用户已设置的值
+    line.dwellSeconds ??= DEFAULT_DWELL_SEC
+    line.firstTrain ??= DEFAULT_FIRST_TRAIN
+    line.lastTrain ??= DEFAULT_LAST_TRAIN
   }
   // 站点级新字段（v2：icon / exits）
   for (const st of Object.values(work.stations)) {

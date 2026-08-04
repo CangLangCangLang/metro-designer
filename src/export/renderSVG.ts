@@ -2,7 +2,14 @@ import type { Work } from '../model/types'
 import { isTransfer, stationColor } from '../model/transfer'
 import { fitContent, projectMerc, type Pt, type FitTransform } from './project'
 import { smoothPathD, straightPathD } from '../utils/smooth'
-import { formatDistance, lineLengthMeters } from '../utils/geo'
+import {
+  DEFAULT_FIRST_TRAIN,
+  DEFAULT_LAST_TRAIN,
+  formatDistance,
+  formatDuration,
+  lineLengthMeters,
+  tripMinutesWithDwell,
+} from '../utils/geo'
 import { lineSegments } from '../utils/lineSegments'
 
 export interface ExportOptions {
@@ -308,17 +315,36 @@ export function exportWorkToSVG(
     occupiedRects.push({ x: 20, y: 20, w: Math.max(textWidth(work.name, TITLE_FONT), 260) + 30, h: 110 })
   }
   let legendRect: Rect | null = null
-  let legendRows: { color: string; text: string }[] = []
+  let legendRows: { color: string; text: string; sub: string }[] = []
+  const LEGEND_ROW_H = 66
+  const LEGEND_MAIN_FS = 26
+  const LEGEND_SUB_FS = 21
   if (options.showLegend && visibleLines.length > 0) {
-    const lineHeight = 44
     const padX = 22
     const padY = 16
-    legendRows = visibleLines.map((l) => ({
-      color: l.color,
-      text: `${l.name}（${l.stationIds.length}站 · ${formatDistance(lineLengthMeters(l, work.stations))}）`,
-    }))
-    const cardW = Math.max(...legendRows.map((r) => textWidth(r.text, 26))) + padX * 2 + 52
-    const cardH = legendRows.length * lineHeight + padY * 2
+    legendRows = visibleLines.map((l) => {
+      const first = l.firstTrain ?? DEFAULT_FIRST_TRAIN
+      const last = l.lastTrain ?? DEFAULT_LAST_TRAIN
+      const parts2: string[] = []
+      if (l.stationIds.length >= 2) {
+        parts2.push(`全程${formatDuration(tripMinutesWithDwell(l, work.stations))}`)
+      }
+      parts2.push(`首班 ${first}`, `末班 ${last}`)
+      return {
+        color: l.color,
+        text: `${l.name}（${l.stationIds.length}站 · ${formatDistance(lineLengthMeters(l, work.stations))}）`,
+        sub: parts2.join(' ｜ '),
+      }
+    })
+    const cardW =
+      Math.max(
+        ...legendRows.map((r) =>
+          Math.max(textWidth(r.text, LEGEND_MAIN_FS), textWidth(r.sub, LEGEND_SUB_FS)),
+        ),
+      ) +
+      padX * 2 +
+      52
+    const cardH = legendRows.length * LEGEND_ROW_H + padY * 2
     legendRect = { x: W - cardW - 28, y: 28, w: cardW, h: cardH }
     occupiedRects.push(legendRect)
   }
@@ -380,17 +406,20 @@ export function exportWorkToSVG(
 
   // 6. 图例（右上角白卡，位置已在避让前算好）
   if (legendRect) {
-    const lineHeight = 44
     const padX = 22
     const padY = 16
     parts.push(
       `<rect x="${legendRect.x}" y="${legendRect.y}" width="${legendRect.w.toFixed(0)}" height="${legendRect.h}" rx="14" fill="#ffffff" stroke="#dddddd" stroke-width="2" opacity="0.95"/>`,
     )
     legendRows.forEach((r, i) => {
-      const y = legendRect!.y + padY + i * lineHeight + lineHeight / 2
+      // 每行两栏：主行（线名/站数/里程）+ 副行（全程时长、首末班车）
+      const top = legendRect!.y + padY + i * LEGEND_ROW_H
+      const yMain = top + 22
+      const ySub = top + 48
       parts.push(
-        `<rect x="${legendRect!.x + padX}" y="${y - 8}" width="34" height="16" rx="8" fill="${r.color}"/>`,
-        `<text x="${legendRect!.x + padX + 46}" y="${y}" font-size="26" fill="#333333" dominant-baseline="central">${esc(r.text)}</text>`,
+        `<rect x="${legendRect!.x + padX}" y="${yMain - 8}" width="34" height="16" rx="8" fill="${r.color}"/>`,
+        `<text x="${legendRect!.x + padX + 46}" y="${yMain}" font-size="${LEGEND_MAIN_FS}" fill="#333333" dominant-baseline="central">${esc(r.text)}</text>`,
+        `<text x="${legendRect!.x + padX + 46}" y="${ySub}" font-size="${LEGEND_SUB_FS}" fill="#777777" dominant-baseline="central">${esc(r.sub)}</text>`,
       )
     })
   }

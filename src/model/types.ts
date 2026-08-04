@@ -58,6 +58,12 @@ export interface Line {
   /** 区间手绘覆盖路径：key 同 segmentSpeeds，value 为该区间的手绘折线点（lat,lng）。
    *  存在时该区间渲染手绘路径（画笔连入线路时写入），而非直线/曲线；旧作品缺失则为 undefined。 */
   segmentPaths?: Record<number, { lat: number; lng: number }[]>
+  /** 每站停站时长（秒），默认 30；参与全程时长与各站到点时刻推算 */
+  dwellSeconds?: number
+  /** 首班车发车时刻 "HH:MM"，默认 06:00 */
+  firstTrain?: string
+  /** 末班车发车时刻 "HH:MM"，默认 22:30（早于首班车视为跨零点） */
+  lastTrain?: string
 }
 
 /** 自由画笔笔迹（手绘装饰线，无站点概念、不计里程） */

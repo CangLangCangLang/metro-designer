@@ -3,13 +3,24 @@ import { useWorkStore } from '../store/workStore'
 import { useUIStore } from '../store/uiStore'
 import { LINE_COLORS } from '../model/factory'
 import {
+  DEFAULT_FIRST_TRAIN,
+  DEFAULT_LAST_TRAIN,
+  DWELL_OPTIONS,
   LINE_SPEED_OPTIONS,
   SEG_SPEED_OPTIONS,
+  dwellSeconds,
   formatDistance,
   formatDuration,
+  formatHHMM,
+  formatShortDuration,
   lineLengthMeters,
+  operatingMinutes,
+  parseHHMM,
   segmentLengthsMeters,
+  segmentMinutes,
+  stationOffsetsMinutes,
   tripMinutes,
+  tripMinutesWithDwell,
 } from '../utils/geo'
 import type { Line, Work } from '../model/types'
 
@@ -42,8 +53,15 @@ function StationList({ line, work }: { line: Line; work: Work }) {
   if (stops.length === 0) return <div className="station-list-empty">还没有车站，点地图放站吧</div>
 
   const lens = segmentLengthsMeters(line, work.stations)
-  const minutes = tripMinutes(line, work.stations)
+  const segMins = segmentMinutes(line, work.stations)
+  const offsets = stationOffsetsMinutes(line, work.stations)
+  const runMinutes = tripMinutes(line, work.stations)
+  const totalMinutes = tripMinutesWithDwell(line, work.stations)
   const groundDefault = line.defaultGround ?? 'ground'
+  const dwellSec = dwellSeconds(line)
+  const midStops = Math.max(stops.length - 2, 0)
+  const firstMin = parseHHMM(line.firstTrain ?? DEFAULT_FIRST_TRAIN)
+  const lastMin = parseHHMM(line.lastTrain ?? DEFAULT_LAST_TRAIN)
 
   const cycleSegSpeed = (segIdx: number) => {
     const current = line.segmentSpeeds?.[segIdx] ?? 0 // 0 = 自动
@@ -80,7 +98,12 @@ function StationList({ line, work }: { line: Line; work: Work }) {
           </button>
           {i > 0 && (
             <div className="station-list-gap">
-              <span>↓ {formatDistance(lens[i - 1] ?? 0)}</span>
+              <span>
+                ↓ {formatDistance(lens[i - 1] ?? 0)}
+                <b className="seg-min" title="这一段的行车时间（距离 ÷ 本段时速）">
+                  {formatShortDuration(segMins[i - 1] ?? 0)}
+                </b>
+              </span>
               <div className="gap-btns">
                 <button
                   className={`seg-speed-btn ${line.segmentSpeeds?.[i - 1] ? 'seg-speed-custom' : ''}`}
@@ -112,7 +135,15 @@ function StationList({ line, work }: { line: Line; work: Work }) {
           )}
           <div className="station-list-item">
             <span className="station-list-dot" style={{ background: line.color }} />
-            {st.name}
+            <span className="station-list-name">{st.name}</span>
+            {firstMin !== null && stops.length >= 2 && (
+              <span
+                className="station-time"
+                title={`首班车 ${line.firstTrain ?? DEFAULT_FIRST_TRAIN} 从起点发车，约这个时刻到达本站`}
+              >
+                {formatHHMM(firstMin + (offsets[i] ?? 0))}
+              </span>
+            )}
           </div>
         </div>
       ))}
@@ -133,7 +164,23 @@ function StationList({ line, work }: { line: Line; work: Work }) {
         </button>
       )}
       {stops.length >= 2 && (
-        <div className="trip-time">🕐 全程 {formatDuration(minutes)}</div>
+        <div className="trip-time">
+          <div className="trip-time-main">🕐 全程 {formatDuration(totalMinutes)}</div>
+          <div className="trip-time-sub">
+            行车 {formatShortDuration(runMinutes)}
+            {midStops > 0 && dwellSec > 0 && ` ＋ 停站 ${midStops} 站 × ${dwellSec} 秒`}
+          </div>
+          {firstMin !== null && (
+            <div className="trip-time-sub">
+              🌅 首班车 {formatHHMM(firstMin)} 发车 → {formatHHMM(firstMin + totalMinutes)} 到终点
+            </div>
+          )}
+          {lastMin !== null && (
+            <div className="trip-time-sub">
+              🌙 末班车 {formatHHMM(lastMin)} 发车 → {formatHHMM(lastMin + totalMinutes)} 到终点
+            </div>
+          )}
+        </div>
       )}
     </div>
   )
@@ -213,6 +260,12 @@ export function LinePanel() {
         const style = line.style ?? 'solid'
         const pathMode = line.pathMode ?? 'straight'
         const groundDefault = line.defaultGround ?? 'ground'
+        const hasRoute = line.stationIds.length >= 2
+        const totalMin = hasRoute ? tripMinutesWithDwell(line, work.stations) : 0
+        const firstTrain = line.firstTrain ?? DEFAULT_FIRST_TRAIN
+        const lastTrain = line.lastTrain ?? DEFAULT_LAST_TRAIN
+        const opMin = operatingMinutes(firstTrain, lastTrain)
+        const dwellSec = dwellSeconds(line)
         return (
           <div
             key={line.id}
@@ -261,17 +314,20 @@ export function LinePanel() {
                   {line.name}
                 </span>
               )}
-              <button
-                className="line-st-count line-detail-toggle"
-                title="展开站点列表"
-                onClick={(e) => {
-                  e.stopPropagation()
-                  setDetailFor(detailFor === line.id ? null : line.id)
-                }}
-              >
-                {line.stationIds.length}站 · {formatDistance(km)} {detailFor === line.id ? '▴' : '▾'}
-              </button>
             </div>
+
+            {/* 指标独占一行：线名再长也不会被挤掉，站数/里程/全程时长也不会被截断 */}
+            <button
+              className="line-st-count line-detail-toggle"
+              title="展开站点列表与时刻"
+              onClick={(e) => {
+                e.stopPropagation()
+                setDetailFor(detailFor === line.id ? null : line.id)
+              }}
+            >
+              {line.stationIds.length}站 · {formatDistance(km)}
+              {hasRoute && ` · 🕐 ${formatDuration(totalMin)}`} {detailFor === line.id ? '▴' : '▾'}
+            </button>
 
             <div className="line-card-row line-actions" onClick={(e) => e.stopPropagation()}>
               <button
@@ -375,6 +431,52 @@ export function LinePanel() {
               </div>
               <div className="section-note">
                 下面每段可单独切地上 / 地下；「调整」模式下直接点地图上的某一段也能切换
+              </div>
+
+              <div className="section-label">🕐 运营时间</div>
+              <div className="time-row">
+                <label className="time-field">
+                  <span className="time-field-label">🌅 首班车</span>
+                  <input
+                    className="time-input"
+                    type="time"
+                    value={firstTrain}
+                    onChange={(e) => {
+                      if (e.target.value) updateLine(line.id, { firstTrain: e.target.value })
+                    }}
+                  />
+                </label>
+                <label className="time-field">
+                  <span className="time-field-label">🌙 末班车</span>
+                  <input
+                    className="time-input"
+                    type="time"
+                    value={lastTrain}
+                    onChange={(e) => {
+                      if (e.target.value) updateLine(line.id, { lastTrain: e.target.value })
+                    }}
+                  />
+                </label>
+              </div>
+              <div className="op-summary">
+                {opMin !== null && <>🚉 每天运营 {formatDuration(opMin)}</>}
+                {hasRoute && <> · 单程 {formatDuration(totalMin)}</>}
+              </div>
+
+              <div className="section-label">
+                每站停车 <span className="section-hint">秒</span>
+              </div>
+              <div className="seg-group speed-group">
+                {DWELL_OPTIONS.map((opt) => (
+                  <button
+                    key={opt}
+                    className={`pill-btn pill-speed ${dwellSec === opt ? 'pill-on' : ''}`}
+                    title={opt === 0 ? '不停站（直达）' : `每站停车 ${opt} 秒`}
+                    onClick={() => updateLine(line.id, { dwellSeconds: opt })}
+                  >
+                    {opt === 0 ? '不停' : opt}
+                  </button>
+                ))}
               </div>
             </div>
 
