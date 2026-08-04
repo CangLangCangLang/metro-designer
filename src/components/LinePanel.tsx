@@ -34,6 +34,7 @@ function insertLatLng(
 function StationList({ line, work }: { line: Line; work: Work }) {
   const updateLine = useWorkStore((s) => s.updateLine)
   const toggleSegmentGround = useWorkStore((s) => s.toggleSegmentGround)
+  const setSegmentPath = useWorkStore((s) => s.setSegmentPath)
   const insertStation = useWorkStore((s) => s.insertStation)
   const stops = line.stationIds
     .map((id) => work.stations[id])
@@ -56,6 +57,10 @@ function StationList({ line, work }: { line: Line; work: Work }) {
 
   const cycleSegGround = (segIdx: number) => {
     toggleSegmentGround(line.id, segIdx)
+  }
+
+  const clearSegPath = (segIdx: number) => {
+    setSegmentPath(line.id, segIdx, null)
   }
 
   return (
@@ -93,6 +98,15 @@ function StationList({ line, work }: { line: Line; work: Work }) {
                 >
                   {(line.segmentGround?.[i - 1] ?? groundDefault) === 'under' ? '🌑地下' : '🌞地上'}
                 </button>
+                {line.segmentPaths?.[i - 1] && (
+                  <button
+                    className="seg-path-reset-btn"
+                    title="这一段用手绘画过，点我重置回直/曲线"
+                    onClick={() => clearSegPath(i - 1)}
+                  >
+                    ↺ 直线
+                  </button>
+                )}
               </div>
             </div>
           )}

@@ -140,6 +140,8 @@ interface WorkStore {
   // ---- 地上/地下 ----
   /** 切换某「站间区间」的地上/地下（segIdx 即 stationIds[i]→stationIds[i+1]） */
   toggleSegmentGround(lineId: string, segIdx: number): void
+  /** 设置/清除某站间区间的手绘覆盖路径（画笔连入线路时写入；传 null 清除，回到直/曲线） */
+  setSegmentPath(lineId: string, segIdx: number, points: { lat: number; lng: number }[] | null): void
 
   // ---- 其他 ----
   setView(view: Work['view']): void
@@ -512,6 +514,19 @@ export const useWorkStore = create<WorkStore>((set, get) => ({
     get().mutate((w) => ({
       ...w,
       freehands: (w.freehands ?? []).filter((f) => f.id !== id),
+    }))
+  },
+
+  setSegmentPath(lineId, segIdx, points) {
+    get().mutate((w) => ({
+      ...w,
+      lines: w.lines.map((l) => {
+        if (l.id !== lineId) return l
+        const sp = { ...(l.segmentPaths ?? {}) }
+        if (points && points.length >= 2) sp[segIdx] = points
+        else delete sp[segIdx]
+        return { ...l, segmentPaths: sp }
+      }),
     }))
   },
 

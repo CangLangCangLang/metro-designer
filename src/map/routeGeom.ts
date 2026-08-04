@@ -1,7 +1,7 @@
 import L from 'leaflet'
 import type { Line, Station } from '../model/types'
 import { bearingDegrees, distanceMeters } from '../utils/geo'
-import { smoothSampleWithSeg } from '../utils/smooth'
+import { lineSegments } from '../utils/lineSegments'
 
 /** 线路几何：站点序列 + 累计里程 + 区间映射，用于列车匀速插值与区间时速 */
 export interface RouteGeom {
@@ -20,22 +20,19 @@ export function buildRouteGeom(
   line: Line,
   stations: Record<string, Station>,
 ): RouteGeom {
-  const raw = line.stationIds
-    .map((id) => stations[id])
-    .filter((s): s is Station => Boolean(s))
-    .map((s) => ({ lat: s.lat, lng: s.lng }))
+  // 与线路渲染共用 lineSegments：直线/曲线/手绘覆盖区间全部一致，列车沿用户画的线跑（不出轨）
+  const parts = lineSegments(line, stations)
+  if (parts.length === 0) return { pts: [], cum: [], total: 0, segOf: [] }
 
-  let pts: { lat: number; lng: number }[]
-  let segOf: number[]
-  if ((line.pathMode ?? 'straight') === 'smooth' && raw.length >= 3) {
-    // 曲线模式：平滑采样，列车沿曲线跑（不出轨），并记录采样点所属站点区间
-    const { points, segOf: so } = smoothSampleWithSeg(raw.map((s) => ({ x: s.lat, y: s.lng })))
-    pts = points.map((p) => ({ lat: p.x, lng: p.y }))
-    segOf = so
-  } else {
-    pts = raw
-    // 直线模式：段 lo 即站点区间 lo
-    segOf = raw.map((_, i) => Math.min(i, Math.max(0, raw.length - 2)))
+  const pts: { lat: number; lng: number }[] = []
+  const segOf: number[] = []
+  for (const part of parts) {
+    part.pts.forEach((p, i) => {
+      // 相邻段共享端点，去重避免里程重复累加
+      if (i === 0 && pts.length > 0) return
+      pts.push({ lat: p[0], lng: p[1] })
+      segOf.push(part.segIdx)
+    })
   }
 
   const cum: number[] = [0]

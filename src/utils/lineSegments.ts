@@ -58,5 +58,27 @@ export function lineSegments(line: Line, stations: Record<string, Station>): Seg
       ground: groundAt(i),
     })
   }
+
+  // 手绘覆盖：若某区间被画笔重绘（segmentPaths），用笔画路径替换该区间的 pts，
+  // 并把首尾点对齐到区间两端站点，保证与相邻段无缝衔接。这样画笔形状真正成为线路，
+  // 不再额外渲染一条独立画笔线。
+  const customPaths = line.segmentPaths
+  if (customPaths) {
+    const out: SegPart[] = []
+    for (const part of parts) {
+      const cp = customPaths[part.segIdx]
+      const a = raw[part.segIdx]
+      const b = raw[part.segIdx + 1]
+      if (cp && cp.length >= 2 && a && b) {
+        const pts: [number, number][] = cp.map((p) => [p.lat, p.lng])
+        pts[0] = [a.lat, a.lng]
+        pts[pts.length - 1] = [b.lat, b.lng]
+        out.push({ ...part, pts })
+        continue
+      }
+      out.push(part)
+    }
+    return out
+  }
   return parts
 }

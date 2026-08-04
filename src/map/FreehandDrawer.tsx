@@ -68,6 +68,15 @@ function fallbackLineId(): string | undefined {
   return useUIStore.getState().activeLineId || w?.lines[0]?.id
 }
 
+/** 在 stationIds 中找到 a、b 为相邻两站的区间序号（顺序无关，画笔可正向或反向画）；找不到返回 -1 */
+function findConsecutiveIndex(stationIds: string[], a: string, b: string): number {
+  for (let i = 0; i < stationIds.length - 1; i++) {
+    if (stationIds[i] === a && stationIds[i + 1] === b) return i
+    if (stationIds[i] === b && stationIds[i + 1] === a) return i
+  }
+  return -1
+}
+
 /**
  * 自由画笔：进入画笔模式后在地图上方铺一层透明覆盖层，用 Pointer 事件（鼠标+触屏通用）
  * 采集路径，松手成线。覆盖层吃掉了所有指针事件，地图因此不会平移/缩放。
@@ -185,10 +194,40 @@ export function FreehandDrawer() {
     draftRef.current = []
     setDraft([])
     setSnap(null)
-    if (pts.length >= 2) {
-      addFreehand(brushColor, pts.map(([lat, lng]) => ({ lat, lng })), 2, startStationRef.current, endStationId)
-    }
+    const startId = startStationRef.current
     startStationRef.current = null
+
+    // 若起/终点都落在某条线路的两个相邻站点上 → 把笔画路径直接喂进该区间（segmentPaths），
+    // 让这条线真正沿手绘画出来，且不会额外渲染一条独立画笔线。否则保留为装饰性画笔笔迹。
+    const w = useWorkStore.getState().work
+    const lines = w?.lines ?? []
+    // 优先活动线路，其次任意包含该相邻对的线路
+    const ordered = [
+      ...lines.filter((l) => l.id === useUIStore.getState().activeLineId),
+      ...lines.filter((l) => l.id !== useUIStore.getState().activeLineId),
+    ]
+    let consumed: { lineId: string; segIdx: number } | null = null
+    if (startId && endStationId && startId !== endStationId) {
+      for (const l of ordered) {
+        const idx = findConsecutiveIndex(l.stationIds, startId, endStationId)
+        if (idx >= 0) {
+          consumed = { lineId: l.id, segIdx: idx }
+          break
+        }
+      }
+    }
+    if (consumed) {
+      let pathPts = pts.map(([lat, lng]) => ({ lat, lng }))
+      // 若用户反向画（B→A），把路径翻正为 A→B，避免端点被强行对调后绕圈
+      const cl = lines.find((l) => l.id === consumed!.lineId)!
+      if (cl.stationIds[consumed.segIdx] === endStationId && cl.stationIds[consumed.segIdx + 1] === startId) {
+        pathPts = pathPts.slice().reverse()
+      }
+      useWorkStore.getState().setSegmentPath(consumed.lineId, consumed.segIdx, pathPts)
+    } else if (pts.length >= 2) {
+      // 未连入线路（如空白区自由涂鸦）→ 保留为装饰性画笔笔迹
+      addFreehand(brushColor, pts.map(([lat, lng]) => ({ lat, lng })), 2, startId, endStationId)
+    }
   }
 
   return (

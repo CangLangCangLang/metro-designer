@@ -80,10 +80,10 @@ check('站间距显示', (await page.locator('.station-list-gap').count()) === 3
 await page.screenshot({ path: `${SHOTS}/f3-mileage.png` })
 await page.locator('.line-detail-toggle').click()
 
-console.log('5. 自由画笔')
+console.log('5. 自由画笔 → 连入线路（手绘区间 + 可重置回直线）')
 await page.getByRole('button', { name: /🖌️ 画笔/ }).click()
 await page.waitForTimeout(200)
-// 按住拖动一段弧线
+// 按住拖动一段弧线（空白处起笔/收笔 → 自动建相邻站并连入线路）
 await page.mouse.move(cx - 200, cy + 200)
 await page.mouse.down()
 for (let i = 0; i <= 20; i++) {
@@ -91,23 +91,57 @@ for (let i = 0; i <= 20; i++) {
   await page.waitForTimeout(20)
 }
 await page.mouse.up()
-await page.waitForTimeout(400)
-check('画笔线条已保存', (await page.locator('.leaflet-overlay-pane svg path').count()) >= 5)
+await page.waitForTimeout(1500) // 等自动保存
+check('画笔线条已保存（线路渲染手绘曲线）', (await page.locator('.leaflet-overlay-pane svg path').count()) >= 5)
 await page.screenshot({ path: `${SHOTS}/f4-freehand.png` })
-// 退出画笔模式（覆盖层消失）才能点中选中的笔迹
+// 退出画笔模式
 await page.getByRole('button', { name: /调整/ }).click()
 await page.waitForTimeout(200)
-// 点选笔迹并删除
-const fhHit = [cx - 100, cy + 200 - Math.sin(0.5 * Math.PI) * 80]
-await page.mouse.click(fhHit[0], fhHit[1] + 6)
-await page.waitForTimeout(400)
-const hasSelection = await page.locator('.selection-bar').isVisible().catch(() => false)
-check('点击笔迹弹出操作栏', hasSelection)
-if (hasSelection) {
-  await page.getByRole('button', { name: '🗑️ 删除' }).click()
-  await page.waitForTimeout(300)
-  check('笔迹已删除', !(await page.locator('.selection-bar').isVisible().catch(() => false)))
-}
+// 验证：画笔连入线路后不再有独立画笔笔迹，而是写入 line.segmentPaths
+const workId = () => page.url().match(/#\/editor\/(.+)/)?.[1] ?? null
+const segInfo = await page.evaluate(async (id) => {
+  const req = indexedDB.open('metro-designer')
+  return await new Promise((res) => {
+    req.onsuccess = () => {
+      const db = req.result
+      const tx = db.transaction('works', 'readonly')
+      const get = tx.objectStore('works').get('md:work:' + id)
+      get.onsuccess = () => {
+        const w = get.result
+        const line = (w.lines || [])[0]
+        res({ freehands: (w.freehands || []).length, segKeys: Object.keys(line?.segmentPaths || {}) })
+      }
+      req.onerror = () => res({ freehands: -1, segKeys: [] })
+    }
+    req.onerror = () => res({ freehands: -1, segKeys: [] })
+  })
+}, workId())
+check('画笔连入线路：生成手绘区间路径（segmentPaths）', segInfo.segKeys.length >= 1)
+check('画笔连入线路后【未】产生独立画笔笔迹（不重复画线）', segInfo.freehands === 0)
+// 在线路面板把该手绘区间重置回直/曲线
+if ((await page.locator('.panel-tab-lines').count()) > 0) await page.locator('.panel-tab-lines').click()
+await page.waitForTimeout(200)
+await page.locator('.line-detail-toggle').first().click()
+await page.waitForTimeout(300)
+await page.locator('.seg-path-reset-btn').first().click()
+await page.waitForTimeout(1500) // 等自动保存
+const segAfter = await page.evaluate(async (id) => {
+  const req = indexedDB.open('metro-designer')
+  return await new Promise((res) => {
+    req.onsuccess = () => {
+      const db = req.result
+      const tx = db.transaction('works', 'readonly')
+      const get = tx.objectStore('works').get('md:work:' + id)
+      get.onsuccess = () => res(Object.keys((get.result.lines || [])[0]?.segmentPaths || {}).length)
+      req.onerror = () => res(-1)
+    }
+    req.onerror = () => res(-1)
+  })
+}, workId())
+check('点「↺ 直线」后该区间恢复为直/曲线（手绘路径被清除）', segAfter === 0)
+// 收起站点列表，避免影响后续步骤
+await page.locator('.line-detail-toggle').first().click()
+await page.waitForTimeout(200)
 
 console.log('6. 城市搜索')
 await page.getByRole('button', { name: /找城市/ }).click()

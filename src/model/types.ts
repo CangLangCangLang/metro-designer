@@ -55,6 +55,9 @@ export interface Line {
   defaultGround?: 'ground' | 'under'
   /** 区间地上/地下标记：key 同 segmentSpeeds（stationIds[i]→stationIds[i+1] 的 i） */
   segmentGround?: Record<number, 'ground' | 'under'>
+  /** 区间手绘覆盖路径：key 同 segmentSpeeds，value 为该区间的手绘折线点（lat,lng）。
+   *  存在时该区间渲染手绘路径（画笔连入线路时写入），而非直线/曲线；旧作品缺失则为 undefined。 */
+  segmentPaths?: Record<number, { lat: number; lng: number }[]>
 }
 
 /** 自由画笔笔迹（手绘装饰线，无站点概念、不计里程） */
