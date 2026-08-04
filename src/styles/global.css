@@ -1242,8 +1242,8 @@ select {
 }
 
 .dialog {
-  width: min(480px, 100%);
-  max-height: calc(100vh - 60px);
+  width: min(760px, 100%);
+  max-height: calc(100vh - 48px);
   overflow-y: auto;
   margin: auto;
   background: var(--card);
@@ -1329,6 +1329,63 @@ select {
   grid-template-columns: 1fr 1fr;
   gap: 10px;
   margin-bottom: 10px;
+}
+
+/* 导出「选择线路」勾选列表 */
+.line-select {
+  margin-top: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-height: 240px;
+  overflow-y: auto;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  border-radius: 12px;
+  padding: 6px;
+}
+.line-select-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 15px;
+  font-weight: 600;
+  padding: 8px 10px;
+  border-radius: 8px;
+  cursor: pointer;
+}
+.line-select-item:hover {
+  background: rgba(79, 124, 255, 0.08);
+}
+.line-select-item input {
+  width: 20px;
+  height: 20px;
+}
+.line-swatch {
+  width: 14px;
+  height: 14px;
+  border-radius: 4px;
+  flex: none;
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.12) inset;
+}
+.line-select-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+}
+.btn-small {
+  flex: none;
+  min-height: 34px;
+  padding: 6px 14px;
+  font-size: 13px;
+  font-weight: 700;
+  border-radius: 10px;
+  border: 2px solid rgba(79, 124, 255, 0.3);
+  background: rgba(79, 124, 255, 0.08);
+  color: var(--text);
+  cursor: pointer;
+}
+.btn-small:hover {
+  background: rgba(79, 124, 255, 0.16);
 }
 
 /* ---------- 画廊页 ---------- */

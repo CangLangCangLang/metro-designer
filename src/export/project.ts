@@ -90,6 +90,59 @@ export function fitToCanvas(
 }
 
 /**
+ * 按内容 bbox 直接决定画布尺寸（不再限定 A4 等固定页面）：
+ * W = 内容宽*scale + 2*padding，H 同理；内容居中、比例自然。
+ * 用于导出「按线路范围自适应大小、且地图放大铺满」的图片。
+ */
+export function fitContent(
+  pts: Pt[],
+  padding: number,
+  scale: number,
+): FitTransform {
+  if (pts.length === 0) {
+    return {
+      toCanvas: () => ({ x: padding, y: padding }),
+      width: padding * 2,
+      height: padding * 2,
+      scale,
+      minX: 0,
+      minY: 0,
+      offX: padding,
+      offY: padding,
+    }
+  }
+  let minX = Infinity
+  let minY = Infinity
+  let maxX = -Infinity
+  let maxY = -Infinity
+  for (const p of pts) {
+    if (p.x < minX) minX = p.x
+    if (p.y < minY) minY = p.y
+    if (p.x > maxX) maxX = p.x
+    if (p.y > maxY) maxY = p.y
+  }
+  const bw = Math.max(maxX - minX, 1)
+  const bh = Math.max(maxY - minY, 1)
+  const W = Math.ceil(bw * scale + padding * 2)
+  const H = Math.ceil(bh * scale + padding * 2)
+  return {
+    width: W,
+    height: H,
+    scale,
+    minX,
+    minY,
+    offX: padding,
+    offY: padding,
+    toCanvas(p: Pt): Pt {
+      return {
+        x: padding + (p.x - minX) * scale,
+        y: H - (padding + (p.y - minY) * scale),
+      }
+    },
+  }
+}
+
+/**
  * 画布像素坐标 → 经纬度（fit.toCanvas 的逆运算），用于反算底图瓦片范围。
  */
 export function canvasToLatLng(

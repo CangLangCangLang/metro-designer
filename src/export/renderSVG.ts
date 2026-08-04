@@ -1,6 +1,6 @@
 import type { Work } from '../model/types'
 import { isTransfer, stationColor } from '../model/transfer'
-import { fitToCanvas, projectMerc, type Pt, type FitTransform } from './project'
+import { fitContent, projectMerc, type Pt, type FitTransform } from './project'
 import { smoothPathD, straightPathD } from '../utils/smooth'
 import { formatDistance, lineLengthMeters } from '../utils/geo'
 import { lineSegments } from '../utils/lineSegments'
@@ -25,9 +25,15 @@ export const DEFAULT_EXPORT_OPTIONS: ExportOptions = {
 
 const FONT_STACK = `"PingFang SC","Microsoft YaHei","Noto Sans SC",sans-serif`
 
-/** 画布逻辑尺寸（约 A4 150dpi，PNG 导出时 ×2/×3 即 300/450dpi） */
-const A4_PORTRAIT = { w: 1240, h: 1754 }
-const A4_LANDSCAPE = { w: 1754, h: 1240 }
+/**
+ * 导出画布不再限定 A4 大小：按线路内容范围自适应画布，
+ * 并放大到「较长边约 TARGET_LONG 像素」，使线路清晰可见；
+ * 地图底图据此级别放大铺满整张图（与线路严格对齐）。
+ */
+const TARGET_LONG = 2200
+/** 缩放下限，避免超大范围时像素过小；上限避免极小内容被放得过分巨大 */
+const SCALE_MIN = 0.06
+const SCALE_MAX = 40
 
 const LINE_CORE_W = 10
 const LINE_CASING_W = 18
@@ -174,9 +180,14 @@ export function exportWorkToSVG(
     minY = Math.min(minY, p.y)
     maxY = Math.max(maxY, p.y)
   }
-  const landscape = maxX - minX > maxY - minY
-  const { w: W, h: H } = landscape ? A4_LANDSCAPE : A4_PORTRAIT
-  const fit = fitToCanvas(allPts, W, H, 110)
+  // 按内容范围自适应：放大到较长边约 TARGET_LONG 像素，线路清晰、地图随之放大
+  const contentW = Math.max(maxX - minX, 1)
+  const contentH = Math.max(maxY - minY, 1)
+  const longer = Math.max(contentW, contentH)
+  const scale = Math.min(Math.max(TARGET_LONG / longer, SCALE_MIN), SCALE_MAX)
+  const fit = fitContent(allPts, 120, scale)
+  const W = fit.width
+  const H = fit.height
 
   const parts: string[] = []
   // 注意：font-family 用单引号包裹——XML 双引号属性值内不允许再出现双引号

@@ -16,6 +16,9 @@ const errors = []
 const failed = []
 let passed = 0
 
+const downloads = []
+const downloadNames = []
+
 function check(name, cond) {
   if (cond) {
     passed++
@@ -32,6 +35,15 @@ const browser = await chromium.launch({
     'C:/Users/wythe/AppData/Local/ms-playwright/chromium-1223/chrome-win64/chrome.exe',
 })
 const page = await browser.newPage({ viewport: { width: 1440, height: 900 } })
+page.on('download', async (d) => {
+  downloads.push(d)
+  try {
+    downloadNames.push(d.suggestedFilename())
+    console.log('  [download]', d.suggestedFilename())
+  } catch {
+    downloadNames.push('')
+  }
+})
 page.on('console', (msg) => {
   if (msg.type() === 'error') errors.push(msg.text())
 })
@@ -114,51 +126,57 @@ await page.locator('.selection-bar .btn', { hasText: '✖️' }).last().click()
 await page.waitForTimeout(200)
 await page.getByRole('button', { name: /📤 导出/ }).click()
 await page.waitForSelector('.dialog', { timeout: 3000 })
-check('含「整体线路」范围按钮', (await page.getByRole('button', { name: /整体线路/ }).count()) >= 1)
-check('含「按地铁（每条线一张）」范围按钮', (await page.getByRole('button', { name: /按地铁/ }).count()) >= 1)
+check('含「全部线路（一张图）」范围按钮', (await page.getByRole('button', { name: /全部线路/ }).count()) >= 1)
+check('含「选择线路（每条一张）」范围按钮', (await page.getByRole('button', { name: /选择线路/ }).count()) >= 1)
 check('含「白底」背景按钮', (await page.getByRole('button', { name: /白底/ }).count()) >= 1)
 check('含「透明」背景按钮', (await page.getByRole('button', { name: /^透明$/ }).count()) >= 1)
 check('含「地图底图」背景按钮', (await page.getByRole('button', { name: /地图底图/ }).count()) >= 1)
+
+console.log('3b. 「选择线路」出现勾选列表，且按 城市-线路名 命名')
+await page.getByRole('button', { name: /选择线路（每条一张）/ }).click()
+await page.waitForTimeout(150)
+check('出现线路勾选列表 .line-select', (await page.locator('.line-select').count()) >= 1)
+check('列表含 1 条线路（1号线）', (await page.locator('.line-select-item').count()) === 1)
+check('线路复选框默认勾选', await page.locator('.line-select-item input').first().isChecked())
+await page.screenshot({ path: `${SHOTS}/ee-2b-select-lines.png` })
+// 切回全部，准备后续导出
+await page.getByRole('button', { name: /全部线路/ }).click()
+await page.waitForTimeout(100)
+
 await page.screenshot({ path: `${SHOTS}/ee-2-export-dialog.png` })
 
-console.log('4. 整体 + 白底 PNG 导出可触发下载')
-const downloads = []
-page.on('download', async (d) => {
-  downloads.push(d)
-  try {
-    console.log('  [download]', d.suggestedFilename())
-  } catch {
-    /* ignore */
-  }
-})
-await page.getByRole('button', { name: /整体线路/ }).click()
+console.log('4. 全部 + 白底 PNG 导出，文件名含城市')
+await page.getByRole('button', { name: /整体线路|全部线路/ }).click()
 await page.getByRole('button', { name: /白底/ }).click()
 await page.getByRole('button', { name: /PNG 图片（清晰）/ }).click()
 await page.waitForEvent('download', { timeout: 15000 }).catch(() => {})
 await page.waitForTimeout(800)
-check('整体白底 PNG 至少触发一次下载', downloads.length >= 1)
+check('全部白底 PNG 至少触发一次下载', downloads.length >= 1)
+check('全部导出文件名含「北京-」与作品名', (downloadNames[0] ?? '').includes('北京-') && (downloadNames[0] ?? '').includes('出口距离与导出验证'))
 
-console.log('5. 按地铁（每条线一张）PNG 导出')
+console.log('5. 选择线路（每条一张）PNG 导出，文件名含线路名')
 // 上一步成功导出后对话框会关闭，这里重新打开
 await page.getByRole('button', { name: /📤 导出/ }).click()
 await page.waitForSelector('.dialog', { timeout: 3000 })
-await page.getByRole('button', { name: /按地铁（每条线一张）/ }).click()
+await page.getByRole('button', { name: /选择线路（每条一张）/ }).click()
 await page.getByRole('button', { name: /白底/ }).click()
 await page.getByRole('button', { name: /PNG 图片（超清）/ }).click()
 await page.waitForEvent('download', { timeout: 20000 }).catch(() => {})
 await page.waitForTimeout(600)
-check('按地铁（每条线一张）PNG 触发下载', downloads.length >= 2)
+check('选择线路 PNG 触发下载', downloads.length >= 2)
+check('选择线路导出文件名含「1号线」', (downloadNames[1] ?? '').includes('1号线'))
 
-console.log('6. 按地铁 + 地图底图 PNG（放大并带地图背景，可无网降级）')
+console.log('6. 选择线路 + 地图底图 PNG（放大并带地图背景，可无网降级）')
 await page.getByRole('button', { name: /📤 导出/ }).click()
 await page.waitForSelector('.dialog', { timeout: 3000 })
-await page.getByRole('button', { name: /按地铁（每条线一张）/ }).click()
+await page.getByRole('button', { name: /选择线路（每条一张）/ }).click()
 await page.getByRole('button', { name: /地图底图/ }).click()
 await page.getByRole('button', { name: /PNG 图片（清晰）/ }).click()
 await page.waitForEvent('download', { timeout: 60000 }).catch(() => {})
 await page.waitForTimeout(600)
 console.log('  downloads so far:', downloads.length)
-check('按地铁+地图底图 PNG 触发下载（含降级）', downloads.length >= 3)
+check('选择线路+地图底图 PNG 触发下载（含降级）', downloads.length >= 3)
+check('地图底图导出文件名含「1号线」', (downloadNames[2] ?? '').includes('1号线'))
 
 await browser.close()
 
