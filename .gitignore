@@ -3,3 +3,5 @@ dist
 scripts/shots
 .workbuddy
 *.local
+AGENTS.md
+CLAUDE.md
